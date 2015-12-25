@@ -1,0 +1,13 @@
+<font size=4>Herzlich Willkommen</font>
+</p>
+<p>
+bei der Kundenbefragung der Berliner Sparkasse!
+</p>
+<p>
+</p>
+<p>
+<a href='?form'><b>Bitte klicken Sie hier, um nun mit der Umfrage zu beginnen</b></a>
+</p>
+<p>
+<div style='float: right;'><a id='dsabutton' href='#' onclick='javascript:toggleDsa();'><font size=2>Datenschutzerklärung</font></a></div>
+

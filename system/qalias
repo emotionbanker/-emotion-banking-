@@ -1,0 +1,79 @@
+<?php
+
+
+function getQAlias($qid, $aid)
+{
+  $r = query("select alias from  " . QALIAS . " where a_fr_id='".$qid."' and al_id='".$aid."'");
+  
+  if ($row = mysql_fetch_assoc($r))
+    return $row['alias'];
+    
+  else return false;
+}
+
+function getQAliasList($qid)
+{
+  $list = array();
+  
+  $r = query("select * from " . QALIAS . " where a_fr_id='".$qid."' order by al_id");
+  
+  while ($row = mysql_fetch_assoc($r))
+    $list[] = $row;
+    
+   return $list;
+}
+
+function dropQAlias($qid, $aid)
+{
+   //exists?
+  $r = query("select count(*) from  " . QALIAS . " where a_fr_id='".$qid."' and al_id='".$aid."'");
+  
+  if (mysql_fetch_row($r)) //drop
+    query("delete from ".QALIAS." where a_fr_id='".$qid."' and al_id='".$aid."'");
+}
+
+function setQAlias($qid, $aid, $alias)
+{
+  dropQAlias($qid, $aid);
+
+  query("insert into ".QALIAS." values ('".$qid."','".$aid."','".$alias."')");
+  
+  showQAlias($qid);
+}
+
+function showQAlias($qid)
+{
+  $q = getQuestionById($qid);
+  
+  echo "<h1>Fragenalias (Frage $qid)</h1>";
+  
+  echo "<p>";
+  echo "Originaltext: <i style='background-color: #f0f0f0;'>".$q['question']."</i>";
+  echo "</p>";
+  
+  echo "<hr/><h2>Alternativtexte</h2>";
+  
+  $alist = getQAliasList($qid);
+  
+  if (count($alist) == 0) echo "<i>keine</i><br/>";
+  foreach ($alist as $a)
+  {
+    echo "<small><a href='?drop-question-alias=$qid&alias=".$a['al_id']."'>[x]</a></small>&nbsp;&nbsp;" . $qid . "/" . $a['al_id'] . ": <i style='background-color: #f0f0f0;'>".$a['alias']."</i>";
+    echo "<br/>";
+  }
+  
+  echo "<hr/><h2>Hinzufügen/Ersetzen</h2>";
+  
+  echo "<form action='?set-question-alias=$qid' method='post'>";
+  
+  echo "Alias- Nummer: <b>$qid</b>/<input type='text' name='aid' value='' size='2' />";
+  echo "<br/><br/>";
+  echo "Text:<br/><textarea name='alias' cols='80' lines='1'>".$q['question']."</textarea>";
+  
+  echo "<br/><br/><input type='submit' value='speichern'>";
+  
+  echo "</form>";
+}
+
+
+?>

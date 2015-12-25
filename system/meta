@@ -1,0 +1,59 @@
+<?php
+
+function getMeta($uid)
+{
+  return mysql_fetch_assoc(query("select * from ".META." where m_z_id='$uid'"));
+}
+
+function getUidByCode($ug,$b,$code)
+{
+  $r = mysql_fetch_assoc(query("select z_id from ".ZUG." where code='$code' and z_b_id='$b' and z_p_id='$ug'"));
+  if ($r) return $r['z_id'];
+  else return array();
+}
+
+
+function showMetaStats($bid)
+{
+  $b = getBank($bid);  
+  echoBankStat($b);
+  
+  echo "<h1>Metadaten</h1>";
+  
+  $r = query("select z_id from ".ZUG." where used=1 and z_b_id='$bid'");
+  
+  $count = 0;
+  $ips = array();
+  $time = 0;
+  
+  while ($row = mysql_fetch_row($r))
+  {
+    $count++;
+    $meta = getMeta($row[0]);
+    $time += ($meta['time_end'] - $meta['time_start']);
+    $ips[$meta['ip']]++;
+  }
+  
+  echo "Benutzer gesamt: <b>$count</b>";
+  echo "<br/>";
+  echo "Eindeutige IP- Adressen: <b>".count($ips)."</b>";
+  
+  $max = 0;
+  foreach ($ips as $ip => $ipc)
+  {
+    if ($ipc > $max) {$max = $ipc; $mip = $ip; }
+  }
+  
+  echo "<br/>";
+  echo "Am häufigsten eingetragene IP- Adresse: <b>$mip</b> (<b>$max</b> mal)";
+    
+  $time = $time / $count;  
+    
+  echo "<br/>";
+  echo "<br/>";
+  echo "Durchschnittliche Ausfülldauer: <b>".date("H:i:s", $time- 60*60)."</b>";
+}
+
+
+
+?>

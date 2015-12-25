@@ -1,0 +1,159 @@
+<?php
+
+/** 
+  
+  banken
+
+**/
+
+
+function uploadBank($data)
+{
+  $data = file($_FILES['data']['tmp_name']);
+  
+  if(!empty($data)){
+	  $i = 0;
+	  foreach($data as $bank)
+	  {
+		$bb = $bank;
+		$bank = split("@", $bank);
+		if (createBank(trim($bank[1]), trim($bank[0]), trim($bank[2]))){
+		  $succesfulbanken[] = $bb;
+		  $i++;
+		}else{
+		  $errorbanken[] = $bb;
+		  
+		  $errors[] = $bank;
+		}
+	  }
+	  
+	  $err = count($data) - $i;
+	  echo $i . " Bank/en in die Datenbank aufgenommen, " . $err . " Bank/en doppelt oder bereits in der Datenbank vorhanden!<br />\n<br />\n";
+	  
+	  if(count($succesfulbanken)>0){
+		  echo "Liste der erfolgreichen Eingaben:<br />\n";
+		  foreach($succesfulbanken as $errorbank){
+			  $errorbank = split("@", $errorbank);
+			  echo $errorbank[0] . "@" . $errorbank[1] . "@".trim($errorbank[2])."<br />\n";
+		  }
+		  echo "<br />\n";
+	  }//end if
+	  
+	  if($err>0){
+		  echo "Liste der fehlerhaften Eingaben:<br />\n";
+		  foreach($errorbanken as $errorbank){
+			  $errorbank = split("@", $errorbank);
+			  echo $errorbank[0] . "@" . $errorbank[1] . "@".trim($errorbank[2])."<br />\n";
+		  }
+	  }//end if
+  }else{
+	  echo "Bitte eine Datei auswählen!<br />\n<br />\n";
+	  echoUploadBankForm();
+	  
+  }
+  
+}
+
+function deleteBank($id)
+{
+  //delete results
+  //query("delete from ".RES." where");
+  
+  $users = query("select z_id from ".ZUG." where z_b_id='$id'");
+
+  $zids = array();  
+  while ($row = mysql_fetch_row($users)) 
+  {
+    $zids[] = $row[0];
+  }
+  
+  foreach ($zids as $zid)
+  {
+    query("delete from ".ERG." where e_z_id = '".$zid."'");
+    query("delete from ".ZUG." where z_id = '".$zid."'");
+  }
+  
+  query("delete from ".BANK." where b_id='".$id."'");
+}
+
+function createBank($bezeichnung, $id, $klasse)
+{
+  $result = query("select count(*) from ".BANK." where b_id = '".$id."'");
+  $row    = mysql_fetch_row($result);
+  
+  if (!$row[0])
+    return query("INSERT INTO ".BANK." (b_id, bezeichnung, klasse) values ('".$id."', '".$bezeichnung."', '".$klasse."')");
+  else return 0;
+}
+
+function updateBank($bezeichnung, $id, $klasse)
+{
+  $q = "update ".BANK." set bezeichnung='".$bezeichnung."', klasse='".$klasse."' where b_id='".$id."'";
+  $result = query($q);
+  return $result;
+}
+
+
+function getBankList()
+{
+  $list = array();
+  
+  $result = query("select b_id, bezeichnung, klasse from ".BANK."");
+  
+  while ($row = mysql_fetch_row($result)) 
+  {
+    $list[] = $row; 
+  }
+
+  asort($list);
+  
+  return $list;
+}
+
+
+function getBankListFilter($filter){
+  $list = array(); // als array initialisieren
+  $result = query("select b_id, bezeichnung, klasse from ".BANK." where bezeichnung like '%$filter%' "); //holt spalten b_id, bezeichnung und klasse aus der Tabelle Bank
+  while ($row = mysql_fetch_row($result)) //Liefert ein numerisch indizertes Array, das der geholten Zeile entspricht und bewegt den internen Datenatzzeiger vorwärts.
+  {
+    $list[] = $row; //jede zeile seperat speichern 
+  }
+
+  asort($list); // liste sortieren
+  
+  return $list; 
+}
+
+
+function getBank($id)
+{
+  $result = query("select b_id, bezeichnung, klasse from ".BANK." where b_id='$id'");
+  return mysql_fetch_row($result);
+}
+
+function getBankInfoById($id)
+{
+  $return = array();
+  $result = query("select bezeichnung, klasse from ".BANK." where b_id = '".$id."'");
+  if ($result)
+  {
+    $row = mysql_fetch_row($result);
+    $return['bez'] = $row[0];
+    $return['class'] = $row[1];
+  }
+  
+  return $return;
+}
+
+function getBankByID($id)
+{
+  $result = query("select bezeichnung from ".BANK." where b_id = '".$id."'");
+  if ($result)
+  {
+    $row = mysql_fetch_row($result);
+    return $row[0];
+  }
+  else return false;
+}
+
+?>

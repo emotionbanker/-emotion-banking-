@@ -1,0 +1,168 @@
+<?php
+
+/*
+function chooseBankAliasForm()
+{
+  $list = getBankList();
+  
+  echo "<form action='?set-alias' method='post'>";
+  echo "Platzhalter setzen für: <select name='bank'>";
+  foreach ($list as $bank)
+  {
+    echo "<option value='".$bank[0]."'>".$bank[1]."</option>";
+  }
+  echo "</select>";
+  echo "<br/><br/>";
+  echo "<input type='submit' value='Platzhalter für diese Bank bearbeiten'>";
+  echo "</form>";
+}*/
+
+function chooseBankAliasForm()
+{
+  if(isset($_POST['filterButton'])) //wenn Button geklickt wird
+  {
+		$liste = $_POST['filterBank'];
+		$list = array(); // als array initialisieren
+		$result = query("select * from ".BANK." where b_id like '%$liste%' or bezeichnung like '%$liste%' or klasse like '%$liste%'"); //holt spalten b_id, bezeichnung und klasse aus der Tabelle Bank	    while ($row = mysql_fetch_row($result)) //Liefert ein numerisch indizertes Array, das der geholten Zeile entspricht und bewegt den internen Datenatzzeiger vorwärts.
+	    while ($row = mysql_fetch_row($result))
+           {
+	    	$list[] = $row; //jede zeile seperat speichern 
+	    }
+		asort($list); // liste sortieren  
+  }else{
+  $list = getBankList();
+  }
+  
+  if(isset($_POST['filterButton'])){
+	echo "<form id ='listbank' action='?choose-alias' method='post'>";
+	echo '<input value="Zurücksetzen" name="zurück" id="zurück" class="taste" type="submit"  method="post"/>';
+	//echo "</form>"; 
+  }
+  echo "<form name='listbank' action='?choose-alias=' method='post'>";
+  echo "<input type='text' name='filterBank' size='30'  placeholder='Id/Bezeichnung/Klasse'/>";
+  echo "<input value='Filter' name='filterButton' id='filterButton' class='taste' type='submit'  method='post'/>";
+  echo "</form>";
+  
+  echo "<form action='?set-alias' method='post'>";
+  echo "Platzhalter setzen für: <select name='bank'>";
+  foreach ($list as $bank)
+  {
+    echo "<option value='".$bank[0]."'>".$bank[1]."</option>";
+  }
+  echo "</select>";
+  echo "<br/><br/>";
+  echo "<input type='submit' value='Platzhalter für diese Bank bearbeiten'>";
+  echo "</form>";
+}
+
+function getAliases($bank)
+{
+  $q = query("select a_id, original, alias from ".ALIAS." where b_id = '".$bank."'");
+  
+  $al = array();
+  
+  while ($row = mysql_fetch_assoc($q))
+    $al[$row['a_id']] = array($row['original'], $row['alias']);
+    
+  return $al;
+}
+
+function addControl($bank)
+{
+  echo "<form action='?set-alias&do=new&bank=$bank' method='post'>";
+  echo "<table>";
+  echo "Ersetze <input type=text name=original /> durch <input type=text name=alias> <input type='submit' value='hinzufügen' />";
+  echo "</table>";
+  echo "</form>";
+}
+
+function deleteAlias($aid)
+{
+  query("delete from ".ALIAS." where a_id = '$aid'");
+}
+
+function setAliasForm($bank, $do, $original, $alias, $aid)
+{
+  if ($do=='new')
+  {
+    if (trim($original) != "" && trim($alias) != "")
+    {
+      $f = query("select count(*) from ".ALIAS." where b_id = '$bank' and original = '$original' and alias = '$alias'");
+      $row = mysql_fetch_assoc($f);
+      if ($row['count(*)'] == 0)
+        query("insert into ".ALIAS." (b_id, original, alias) values ('".$bank."','".$original."','".$alias."')");
+      else echo "<red>platzhalter existiert bereits</red>";
+    }
+    else
+    {
+      echo "<red>original oder alias sind leer - platzhalter nicht hinzugefügt!</red>";
+    }
+  }
+  if ($do=='edit')
+  {
+    if (trim($original) != "" && trim($alias) != "")
+    {
+      query("update ".ALIAS." set original = '".$original."', alias = '".$alias."' where a_id='".$aid."'");
+    }
+    else
+    {
+      echo "<red>original oder alias sind leer - platzhalter nicht verändert!</red>";
+    }
+    
+  }
+  
+  $bd = getBank($bank);
+  
+  echo "<h1>Platzhalter für ".$bd['1']."</h1>";
+  
+  $al = getAliases($bank);
+
+  echo "<table border=1>";
+  echo "<tr>";
+  echo "<th>Platzhalter</th><th>Ersetzen durch</th><th>Funktionen</th>";  
+  echo "</tr>";  
+  foreach ($al as $aid => $r)
+  {
+    echo "<tr>";
+    echo "<form action='?set-alias&do=edit&aid=$aid&bank=$bank' method='post'>";
+    echo "<td><input type=text name=original value='".$r[0]."' /></td>";
+    echo "<td><input type=text name=alias value='".$r[1]."' /></td>";
+    echo "<td>";
+    echo "<input type='submit' value='ändern' />";
+    echo "&nbsp;&nbsp;&nbsp;<a href='?del-alias&bank=$bank&aid=$aid'>löschen</a>";
+    echo "</td>";
+    echo "</form>";
+    echo "</tr>";
+  }
+  echo "</table>";
+  
+  echo "<br/><br/>";
+  
+  addControl($bank);
+}
+
+function applyAlias($q)
+{
+  global $_SESSION;
+   
+  $al = getAliases($_SESSION['user']['code']['b_id']);
+  
+  foreach ($al as $r)
+    $q[0] = str_replace($r[0], $r[1], $q[0]);
+  
+  return $q;
+}
+
+function applyHAlias($header)
+{
+  global $_SESSION;
+   
+  $al = getAliases($_SESSION['user']['code']['b_id']);
+  
+  foreach ($al as $r)
+    $header = str_replace($r[0], $r[1], $header);
+  
+  return $header;
+}
+
+?>

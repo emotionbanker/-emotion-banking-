@@ -1,0 +1,85 @@
+<?php
+
+
+/**
+ 
+  codes
+  
+**/
+
+function createCodes($bank, $userg, $count)
+{
+  /*
+    $chars = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
+                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' );
+  */
+  
+  //0 und O nicht mehr verwendet!
+  $chars = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 
+                 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' );
+  
+  $codes = array();
+  $viscodes = array();  
+  
+  $result = query("select code from ".ZUG);
+  
+  if ($result)
+    while ($row = mysql_fetch_row($result)) 
+      $list[] = $row[0]; 
+  
+  $list[] = "";
+  
+  for ($i=0; $i<$count; $i++)
+  {
+    $code = "";
+    for ($j = 0; $j < 4; $j++)
+    {
+      $r = rand(0, count($chars)-1);
+      $code .= $chars[$r];
+    }
+    
+    if (!in_array($code, $list))
+    {
+      $codes[] = $code;
+      $list[] = $code;
+      $viscodes[] = visCode($bank, $userg, $code);
+      query("INSERT INTO ".ZUG." (code, z_b_id, z_p_id, used) values ('".$code."', '".$bank."', '".$userg."', '0')");
+    }
+    else
+    {
+      $i--;
+    }
+  }
+   
+  // db
+  return $viscodes;
+}
+
+function visCode($bcode, $ucode, $code)
+{
+  while (strlen($ucode) < 3)
+    $ucode = "0" . $ucode;
+    
+  while (strlen($bcode) < 3)
+    $bcode = "0" . $bcode;
+    
+  return $bcode . $ucode . $code;
+}
+
+
+function getCodesByBank($bank)
+{
+  $list = array();
+  //debug("nv");
+  $result = query("select z_b_id, z_p_id, code, bezeichnung, used, status from ".ZUG.", ".PERSONEN." where LOWER(z_b_id) = '".strtolower($bank)."' and z_p_id = p_id");
+  //$result = query("select z_b_id, z_p_id, code, '0', used, status from ".ZUG." where LOWER(z_b_id) = '".strtolower($bank)."'");
+  if ($result)
+    while ($row = mysql_fetch_row($result)) 
+      $list[] = $row; 
+  
+  return $list;
+}
+
+
+
+?>

@@ -1,0 +1,92 @@
+<span style='font-size: 13pt'><p>Herzlichen Dank f&uuml;r Ihre Zeit und Ihr Engagement!</p>   
+<p>
+Der von Ihnen ausgef&uuml;llte Fragebogen wurde vollst&auml;ndig &uuml;berliefert.
+</p>
+<a href='http://www.bankdesjahres.com/'>Klicken Sie hier, um die Umfrage zu verlassen</a>
+
+</span>
+<!-- -->
+<!-- alles ab inklusive hier kopieren für dankeschön-email -->
+<?php  
+  $recipient = "Empfänger.email.adresse"; // Wert innerhalb der Anführungszeichen anpassen
+  $subject   = "Teilnahme am Dankeschöngeschenk"; //(Betreff) Wert innerhalb der Anführungszeichen anpassen
+?>
+    
+<h3>Dankeschön für Ihre Zeit, die Sie für die Beantwortung des Fragebogens investiert haben! Als Dankeschön verlosen wir unter allen Teilnehmern XXX (z.B.: Tablet, etc.).</h3><!-- Wert innerhalb der <h3> </h3>  anpassen-->
+<h3>Wir garantieren Ihnen absolute Anonymität. Die Angabe Ihrer Daten steht in keinem Zusammenhang mit dem Fragebogen und wird lediglich zur Verlosung verwendet.</h3><!-- Wert innerhalb der <h3> </h3>  anpassen-->
+<h3>Wenn Sie an der Verlosung teilnehmen wollen, tragen Sie bitte Ihren Namen und Ihre Anschrift ein:</h3><!-- Wert innerhalb der <h3> </h3>  anpassen-->
+
+   
+<div id="formular">
+<form action="?mail" method="post">
+	<input type="hidden" name="empfaenger" id="empfaenger" size="50" maxlength="25" value ="<?php echo $recipient; ?>" />
+	<input type="hidden" name="betreff" id="betreff" value="<?php echo $subject; ?>" size="50" />
+	<table summary="Mail Informationen">
+	
+			    
+				<tr>
+					<th align='right'>Anrede:</th> <!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td>
+					<select name="anrede" id="anrede" style="width: 245px" size="1,5">
+					<option>Herr</option> <!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>Frau</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					</td>
+					
+					<th align='right'>Titel:</th> <!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td>
+					<select name="titel" id="titel" style="width: 245px" size="1,5">
+					<option> ----- </option>
+					<option>Dr.</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>Prof.</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>Dkfm.</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>DI. Ing.</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>Ing.</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>Mag.</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>MA</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->
+					<option>BA</option><!-- Wert innerhalb der <option> xxx </option>  anpassen-->  
+			<!--	<option>xx</option> -->  
+			<!--	<option>xx</option> -->
+			<!--	<option>xx</option> -->
+			<!--	<option>xx</option> -->
+					</td>
+				</tr>
+				<tr>
+					<th align='right'> *Name: </th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text"  id="name" size = "35" value=""  placeholder="Mustermann"/></td>
+					
+					<th align='right'>Vorname:</th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text" name="vorname" id="vorname" size = "35" value="" placeholder="Max"/></td><!-- Plathalter text innerhalb der Anführungszeichen anpassen-->
+				</tr>
+				<tr>
+					<th align='right'>*E-Mail:</th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text" name="email" id="email"  size = "35"  value=""  placeholder="max.mustermann@mail.com"/></td><!-- Plathalter text innerhalb der Anführungszeichen anpassen-->
+				</tr>
+				<tr>
+					<th align='right'>Straße:</th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text" name="strasse" id="strasse" size = "35" value="" placeholder="Hauptstraße"/></td><!-- Plathalter text innerhalb der Anführungszeichen anpassen-->
+					
+					<th align='right'>Nr./Stiege:</th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text" name="nr_stiege" id="nr_stiege" size = "35" value="" placeholder="2/3"/></td><!-- Plathalter text innerhalb der Anführungszeichen anpassen-->
+				</tr>
+				<tr>
+					<th align='right'>PLZ:</th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text" name="plz" id="plz" size = "35" value="" placeholder="1010"/></td><!-- Plathalter text innerhalb der Anführungszeichen anpassen-->
+					
+					<th align='right'>Ort:</th>	<!-- Wert innerhalb der <th> </th>  anpassen-->
+					<td><input type="text" name="ort" id="ort" size = "35" value="" placeholder="Wien"/></td><!-- Plathalter text innerhalb der Anführungszeichen anpassen-->
+				</tr>
+				<tr>
+					
+				</tr>
+	</table>
+
+	
+<p><input value="Abschicken" name="senden" id="senden" class="taste" type="submit"/></p>
+
+</form>
+</div>
+</html>
+
+<!-- dankeschön-email -->
+
+

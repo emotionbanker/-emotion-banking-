@@ -1,0 +1,446 @@
+<?php
+
+function etextSettings($save, $delU, $delB, $delL, $default, $newU, $newB, $newS, $newL)
+{
+	$settings = readSettings();
+
+  //debug($settings);	
+
+	if ($save)
+	{
+		if ($delU && $delB)
+		{
+			unset($settings['etexts']['override'][$delU][$delB][$delL]);
+		}
+
+		if ($newU && $newB && $newS)
+		{	
+			$settings['etexts']['override'][$newU][$newB][$newL] = $newS;
+		}
+		
+		if ($default)
+		{
+			$settings['etexts']['default'] = $default;
+		}
+		
+		saveSettings($settings);
+	}
+	
+	$list = getTextList();
+	
+	echo "<h1>Allgemeine Schlusstexte</h1>";
+      			  foreach ($list as $i)
+ 			  {
+                        
+                        
+                                
+   			  }
+	$style="light";
+	echo "<table width='90%'>";
+	
+	echo "<form action='?indiv-etexts&save=true' method='post'/>";
+      
+	echo "<tr class='".$style."'>";
+	echo "<td width='12%'>Default-Text:</td>";
+  echo "<td colspan=3>";
+  echo "<select name='default-text'>";
+  foreach ($list as $i)
+  {
+    if (strpos($i, 'welcome') == false){			   
+        echo "<option";
+        if ($i == $settings['etexts']['default']){
+    	 echo " selected"; 
+   	 }
+   	 echo ">";
+    	 echo $i;
+   	 echo "</option>";
+    }
+  }
+  echo "</select>";
+  echo "</td>";
+  echo "<td>";
+  echo "<input type='submit' value='speichern' />";
+  echo "</td>";
+  echo "</tr>";
+  echo "</table>";
+  echo "</form>";
+$style="light";
+  echo "<table width='80%'>";
+	
+	echo "<form action='?indiv-etexts&save=true' method='post'/>";
+	
+	echo "<tr>";
+    echo "<tr>";
+  echo "<tr/><tr/><tr/><tr/><tr/><tr/><tr/><tr/>";
+  echo "</tr>"; 
+  echo "<th align=left colspan=3><h1>Individuelle Schlusstexte</h1></th>";
+ // echo "<th align=left colspan=3><small>Neue Ausnahme hinzufügen</small></th>";
+  echo "</tr>"; 
+  
+  echo "<tr class='$style'>";
+  
+  echo "<td>";
+  $users = getUsergList();
+  
+  echo "<select name='new-user'>";
+  foreach ($users as $user)
+  {
+  	echo "<option value='".$user[0]."'>";
+  	echo $user[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  
+  
+  echo "<td>";
+  $banks = getBankList();
+  
+  echo "<select name='new-bank'>";
+  echo "<option>Default</option>";
+  foreach ($banks as $bank)
+  {
+  	echo "<option value='".$bank[0]."'>";
+  	echo $bank[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  echo "<td>";
+  $langs = getLangList();
+  
+  echo "<select name='new-lang'>";
+  echo "<option>Default</option>";
+  foreach ($langs as $lang)
+  {
+  	echo "<option value='".$lang[0]."'>";
+  	echo $lang[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  
+  
+  echo "<td>";
+  echo "<select name='new-text'>";
+  foreach ($list as $i)
+  {
+    if (strpos($i, 'welcome') == false){	
+   	 echo "<option>";
+   	 echo $i;
+    	 echo "</option>";
+    }
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  echo "</tr>"; 
+  
+  echo "</table>";
+  
+  echo "<input type='submit' value='hinzufügen' />";
+
+  echo "<table width='90%'>";
+  //echo "<tr>";
+  //echo "<tr/>";
+  //echo "<tr/><tr/><tr/><tr/><tr/><tr/><tr/><tr/>";
+  echo "<h1>bisherige Ausnahmen</h1>";
+
+
+  echo "<th align=left><small>Benutzer</small></th>";
+  echo "<th align=left><small>Bank</small></th>";
+  echo "<th align=left><small>Kürzel</small></th>";
+  echo "<th align=left><small>Sprache</small></th>";
+  echo "<th align=left><small>Schlusstext</small></th>";
+  echo "<th align=left><small>Funktionen</small></th>";
+  echo "</tr>";
+  
+  if ($settings['etexts']['override'])
+  {
+	  foreach ($settings['etexts']['override'] as $ugrp => $dat)
+	  {
+	  	foreach ($dat as $bank => $sty)
+	  	{
+	  		foreach ($sty as $lang => $st)
+	  		{
+		  		echo "<tr class='$style'>";
+		  		
+		  		echo "<td>" . getUsergByID($ugrp) . "</td>";
+                            $arr = getBank($bank);
+		  		echo "<td width='25%'>" . $arr[1] . "</td>";
+		  		echo "<td width='1'>" . $bank . "</td>";
+		  		
+		  		$lid = getLangById($lang);
+		  		
+		  		if (trim($lid) == "") $lid = "Default";
+		  		
+		  		echo "<td width='1'>" . $lid . "</td>";
+		  		echo "<td>" . $st . "</td>";
+		  		echo "<td><a href='?indiv-etexts&save=true&delU=$ugrp&delB=$bank&delL=$lang'>ausnahme löschen</a></td>";
+		  		
+		  		echo "</tr>";
+		  		
+		  		 if ($style == "light") $style = "dark";
+					else $style = "light";
+				}
+	  	}
+	  }
+	}
+  echo "</table>";
+  echo "</form>";
+}
+
+
+
+
+function textSettings($save, $delU, $delB, $delL, $default, $newU, $newB, $newS, $newL)
+{
+	$settings = readSettings();
+	
+	//debug($settings);
+	
+	if ($save)
+	{
+		if ($delU && $delB)
+		{
+			unset($settings['texts']['override'][$delU][$delB][$delL]);
+		}
+
+		if ($newU && $newB && $newS)
+		{	
+			$settings['texts']['override'][$newU][$newB][$newL] = $newS;
+		}
+		
+		if ($default)
+		{
+			$settings['texts']['default'] = $default;
+		}
+		
+		saveSettings($settings);
+	}
+	
+	$list = getTextList();
+	
+	echo "<h1>Allgemeine Begrüssungstexte</h1>";
+	
+	$style="light";
+	echo "<table width='100%'>";
+	
+	echo "<form action='?indiv-texts&save=true' method='post'/>";
+      
+	echo "<tr class='".$style."'>";
+	echo "<td width='1%'>Default-Text:</td>";
+  echo "<td colspan=1>";
+  echo "<select name='default-text'>";
+  foreach ($list as $i)
+  {
+    if (strpos($i, 'end') == false){	
+   	 echo "<option";
+   	 if ($i == $settings['texts']['default']) echo " selected";
+    	 echo ">";
+    	 echo $i;
+    	 echo "</option>";
+    }
+  }
+  echo "</select>";
+  echo "</td>";
+  echo "<td>";
+  echo "<input type='submit' value='speichern' />";
+  echo "</td>";
+  echo "</tr>";
+  
+  echo "</form>";
+  echo "<form action='?indiv-texts&save=true' method='post'/>";
+
+	echo "<tr>";
+    echo "<tr>";
+  echo "<tr/><tr/><tr/><tr/><tr/><tr/><tr/><tr/>";
+  echo "</tr>"; 
+  echo "<th align=left colspan=3><h1>Individuelle Begrüssungstexte</h1></th>";
+  //echo "<th align=left colspan=3><small>Neue Ausnahme hinzufügen</small></th>";
+  echo "</tr>"; 
+  
+  echo "<tr class='$style'>";
+  
+  echo "<td>";
+  $users = getUsergList();
+  
+  echo "<select name='new-user'>";
+  foreach ($users as $user)
+  {
+  	echo "<option value='".$user[0]."'>";
+  	echo $user[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  
+  
+  echo "<td>";
+  $banks = getBankList();
+  
+  echo "<select name='new-bank'>";
+  echo "<option>Default</option>";
+  foreach ($banks as $bank)
+  {
+  	echo "<option value='".$bank[0]."'>";
+  	echo $bank[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  echo "<td>";
+  $langs = getLangList();
+  
+  echo "<select name='new-lang'>";
+  echo "<option>Default</option>";
+  foreach ($langs as $lang)
+  {
+  	echo "<option value='".$lang[0]."'>";
+  	echo $lang[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  
+  
+  echo "<td>";
+  echo "<select name='new-text'>";
+  foreach ($list as $i)
+  {
+    if (strpos($i, 'end') == false){
+    	echo "<option>";
+    	echo $i;
+    	echo "</option>";
+    }
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  echo "</tr>"; 
+  
+  echo "</table>";
+  
+  echo "<input type='submit' value='hinzufügen' />";
+ 
+  echo "<h1>bisherige Ausnahmen</h1>";
+  echo "<table width='70%'";
+
+  echo "<tr>";
+  echo "<th align=left><small>Benutzer</small></th>";
+  echo "<th align=left><small>Bank</small></th>";
+  echo "<th align=left><small>Kürzel</small></th>";
+  echo "<th align=left><small>Sprache</small></th>";
+  echo "<th align=left><small>Begrüssungstext</small></th>";
+  echo "<th align=left><small>Funktionen</small></th>";
+  echo "</tr>";
+  
+  if ($settings['texts']['override'])
+  {
+	  foreach ($settings['texts']['override'] as $ugrp => $dat)
+	  {
+	  	foreach ($dat as $bank => $sty)
+	  	{
+	  		foreach ($sty as $lang => $st)
+	  		{
+		  		echo "<tr class='$style'>";
+		  		
+		  		echo "<td>" . getUsergByID($ugrp) . "</td>";				
+                            
+                            $arr = getBank($bank);                         
+		  		echo "<td width='1'>" . $arr[1] . "</td>";
+		  		echo "<td width='1'>" . $bank . "</td>";
+
+		  		$lid = getLangById($lang);
+		  		
+		  		if (trim($lid) == "") $lid = "Default";
+		  		
+		  		echo "<td width='1'>" . $lid . "</td>";
+		  		echo "<td>" . $st . "</td>";
+		  		echo "<td><a href='?indiv-texts&save=true&delU=$ugrp&delB=$bank&delL=$lang'>ausnahme löschen</a></td>";
+		  		
+		  		echo "</tr>";
+		  		
+		  		 if ($style == "light") $style = "dark";
+					else $style = "light";
+				}
+	  	}
+	  }
+	}
+	
+	
+echo"</table>";
+echo"</form>";
+
+	
+}
+
+
+function getTextList()
+{
+	$dir = TEXT_PATH;
+	
+	$list = array();
+	
+  $d = dir($dir);
+  while (false !== ($entry = $d->read())) 
+  {
+      if($entry != '.' && $entry != '..' && !is_dir($dir.$entry))
+          $list[] = $entry;
+  }
+  $d->close();
+  
+  return $list;
+}
+
+
+function getText07($userg="", $bank="", $lang, $set="texts")
+{
+	//$userg = "9";
+	//debug("get u=" .$userg);
+	//debug("get b=" . $bank);
+	//debug ($lang);
+	$settings = readSettings();
+	//debug($settings);
+	
+  //debug($settings);
+    $bank=strtolower($bank);
+     
+    
+	if ($settings[$set]['override'][$userg][$bank][$lang]) 
+	{
+		//volle ausnahme - bank & sprache	
+		$file = $settings[$set]['override'][$userg][$bank][$lang];
+	}
+	else if ($settings[$set]['override'][$userg][$bank]['Default'])
+	{
+		//ausnahme - bank & default-sprache	
+		$file = $settings[$set]['override'][$userg][$bank]['Default'];
+	}
+	else if ($settings[$set]['override'][$userg]['Default'][$lang])
+	{
+		//ausnahme - default-bank & sprache
+	    $file = $settings[$set]['override'][$userg]['Default'][$lang];
+	}
+	else if ($settings[$set]['override'][$userg]['Default']['Default'])
+	{
+		//ausnahme - default-bank & default-sprache
+		$file = $settings[$set]['override'][$userg]['Default']['Default'];
+	}
+	else
+	{
+		//sonst: allgemein default
+	 	$file = $settings[$set]['default'];
+		//debug("hier");
+	}
+	//debug("[file for $userg/$bank/$lang is $file]");
+	//debug($file);
+	return $file;
+}
+?>

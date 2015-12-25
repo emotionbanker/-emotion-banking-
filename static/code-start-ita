@@ -1,0 +1,70 @@
+  <!--- HIER KANN EIN BELIEBIEGER TEXT EINGEFÜGT WERDEN -->
+
+<?php
+
+?>
+
+  <!--- HIER BEGINNT DER CODE- EINGABETEIL. NICHT BEARBEITEN -->
+
+
+<h1>Inserisca quì il codice personale di accesso al sondaggio:</h1>
+<form action='?login' method='post'>
+
+  <table>
+  <tr>
+  <td>Codice:</td><td><input type='text' name='code' maxlength='13' size='45' />
+  <input type='hidden' name='hid' value='ita' maxlength='13' size='13' /></td>
+   
+  <!-- languages -->
+  
+  <tr>
+  <td>
+  Lingua: 
+  </td>
+  <td>
+  <select name='lang' disabled='false' style='width: 350px' >
+  
+  <?php
+  
+  /*
+    de ... nur deutsch
+    it ... de + ita
+    its .. de + isu
+  */
+ 
+ 
+  if ($k == "de")
+  {
+  	echo "<option value='default'>Deutsch</option>";
+  }
+  else if (langExists($k))
+  {
+	 //echo "Begin";
+	 //echo "Wenn Sie einen persönlichen Code für das Umfragesystem haben, geben Sie diesen bitte hier ein:";
+	 //this lang only
+	 $id = getLangId($k);
+	 $lang = getLangInfoById($id);
+	 echo "<option value='".$id."'>".$lang['name']."</option>";
+	 echo "<input type='hidden' name='language' value='".$k."' />";
+  }
+  else
+  {
+     $id = getLangId($langu);
+	 $lang = getLangInfoById($id);
+	 echo "<option value='".$id."'>".$lang['name']."</option>";
+	 echo "<input type='hidden' name='language' value='".$langu."' />";
+  }
+  ?>
+
+  </select>
+  </td>
+  </tr>
+  
+  </table>
+  
+  <input type='submit' value='Inizio sondaggio' />
+  
+</form>
+
+
+  <!--- HIER ENDET DER CODE- EINGABETEIL. AB HIER ÄNDERUNGEN WIEDER MÖGLICH -->

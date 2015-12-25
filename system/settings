@@ -1,0 +1,132 @@
+<?php
+
+function settingsStylesToLower($settings)
+{
+	$lowsets = array();
+	
+	foreach ($settings['styles']['override'] as $userg => $override)
+	{
+		foreach ($settings['styles']['override'][$userg] as $bank => $or)
+		{
+			$lowsets['styles']['override'][$userg][strtolower($bank)] = $or;
+		}
+	}
+	
+	$lowsets['styles']['default'] = $settings['styles']['default'];
+	
+	return $lowsets;
+}
+
+function readSettings()
+{
+	$data = file(STATIC_DIR . "settings.07");
+	
+	$settings = array();
+	
+	$master = "";
+	
+	foreach ($data as $line)
+	{
+		$symbol = trim(substr($line,0,1));
+		$setting = trim(substr($line,1));
+			
+		switch ($symbol)
+		{
+			case "#": $master = $setting; break;
+			case ":": $settings[$master][substr($setting,0,strpos($setting,"="))] = substr($setting,strpos($setting,"=")+1); break;
+			case "!": 
+			
+			  $pre = substr($setting,0,strpos($setting,"="));
+			  
+		  
+			  if (strpos($pre,"."))
+			  {
+					$ugrp = substr($pre,0,strpos($pre,"."));
+					$bank = substr($pre,strpos($pre,".")+1);
+				}
+				else
+				{
+					$ugrp = $pre;
+					$bank = "Default";
+				}
+				
+				if ($master == "styles")
+				{
+					$settings[$master]['override'][$ugrp][$bank] = substr($setting,strpos($setting,"=")+1);
+				}
+				else if ($master == "texts" || $master == "etexts")
+				{
+					$dat = substr($setting,strpos($setting,"=")+1);
+					
+					$b = substr($bank, 0, strpos($bank,"."));
+					$l = substr($bank, strpos($bank	,".")+1);
+					
+					//$settings[$master]['override'][$ugrp][$b][$l] = $dat;
+					$settings[$master]['override'][$ugrp][strtolower($b)][$l] = $dat;
+				}
+				
+				break;
+		}
+	}
+	
+	return $settings;
+}
+
+function saveSettings($settings)
+{
+	$h = fopen(STATIC_DIR . "settings.07", "w");
+	
+	foreach ($settings as $master => $mdat)
+	{
+		fputs($h, "#" . $master . "\n");
+		
+		if ($master == "styles")
+		{
+			foreach ($mdat as $sub => $dat)
+			{
+				if ($sub == "default")
+				{
+					 fputs($h, ":default=" . $dat . "\n");
+				}
+				else if ($sub == "override")
+				{
+					foreach ($dat as $grp => $over)
+					{
+						foreach ($over as $bank => $rep)
+						{
+							fputs($h, "!" . $grp . "." . $bank . "=" . $rep . "\n");
+						}
+					}
+				}
+			}
+		}
+		else if ($master == "texts" || $master = "etexts")
+		{
+			foreach ($mdat as $sub => $dat)
+			{
+				if ($sub == "default")
+				{
+					 fputs($h, ":default=" . $dat . "\n");
+				}
+				else if ($sub == "override")
+				{
+					foreach ($dat as $grp => $over)
+					{
+						foreach ($over as $bank => $reps)
+						{
+							foreach ($reps as $lang => $rep)
+							{
+								fputs($h, "!" . $grp . "." . $bank . "." . $lang . "=" . $rep . "\n");
+							}
+						}
+					}
+				}
+			}
+		}
+		
+	}
+	
+	fclose($h);
+}
+
+?>

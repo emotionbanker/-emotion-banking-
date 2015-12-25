@@ -1,0 +1,1238 @@
+<?php
+
+
+/**
+
+  public
+  
+**/
+
+function allowed($c)
+{
+  if ($c == "0" ||
+      $c == "1" ||
+      $c == "2" ||
+      $c == "3" ||
+      $c == "4" ||
+      $c == "5" ||
+      $c == "6" ||
+      $c == "7" ||
+      $c == "8" ||
+      $c == "9")
+   return true;
+   
+  if ($c == ".")
+    return true;
+    
+  return false;
+}
+
+function filterQText($qtext)
+{
+  $filter = $qtext;
+  
+  //debug($qtext);
+  $i = 0;
+  for ($i=0; $i<strlen($qtext); $i++)
+  {
+    //debug($qtext[$i]);
+    
+    if ($qtext[$i] == "*")
+    {
+      $i++;
+      $qstring = "";
+      while ($i<strlen($qtext) && allowed($qtext[$i]))
+      {
+        $qstring .= $qtext[$i];
+        $i++;
+      }
+
+      //replace now!
+      $new = getAnswerByReplaceString($qstring);
+      $old = "*" . $qstring;
+      
+      $filter = str_replace($old, $new, $filter);
+    }
+  }
+  
+  return $filter;
+}
+
+function echoMultiQuestion($questions,$num,$qu,$trans=true,$showcond=false)
+{
+	for ($i = 0; $i < count($questions); $i++)
+	{
+	  if ($trans) $questions[$i] = translateQ($questions[$i]);
+	}
+	
+	if ($_SESSION['isadmin'])
+	{
+	//	debug($_SESSION);
+//		debug($questions);
+//		die();
+	}
+	//debug($questions);
+	  
+  $num += 1; //bei 1 beginnen, nicht bei 0
+  $nr = $num - count($questions);
+  //debug($qu);
+  
+  $answers = split(";", $questions[0][2]);
+  
+  if (!is_array($answers))
+    $answers = array($questions[0][2]);
+   
+  foreach($answers as $key => $value)
+  {
+    $answers[$key] = trim($value);
+	//debug($answers[$key]);
+  }
+  
+  
+  // header
+  
+  $style="light";
+
+  echo "<tr><td class='head'><table class='answer'";
+  if ($hide) echo " style='display: none;'";
+  echo ">";
+  
+  if ($questions[0][1] != "text")
+  {
+    
+    echo "<tr class='".$style."'><td></td>";
+
+    foreach ($answers as $answer)
+    {
+		//debug(strlen($answer));
+		if(strlen($answer)>0){
+	    echo "<td class='head'><small>" . $answer . "</small></td>";
+	    }
+
+    }
+  }
+   
+  echo "</tr>";
+  
+  foreach($questions as $q)
+  {
+  	$q = applyAlias($q);
+  	//debug($q);
+  	//debug($_SESSION);
+    echo "<tr class='".$style."' ";
+    echo ">";    
+    
+  	$nr = $q['pos'];
+    
+    //if ($showcond && $q['condition']) $cs = " style='background-color: lightgreen;' ";
+    
+    //debug($q);
+   	
+   	if ($showcond) $q[0] = "<small><b>" . $q[3] . "</b></small> " . $q[0];
+    
+    if ($showcond && $q['condition'])
+	  {
+	  	//$cs = " style='background-color: lightgreen;' ";
+	  	//echo "<tr><td $cs>Wenn: ".$q['condition']."</td></tr>";
+	  	
+	  	$q[0] = "<span style='background-color: lightgreen;'> wenn ".$q['condition']."</span> " . $q[0];
+	  }
+	  
+
+    
+    echo "<td class='qleft".$style."' $cs>";
+    if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+    //debug($nr);
+    echo filterQText($q[0])."</td>";
+    
+    echo "<input type='hidden' name='q[".$nr."]' value=''/>";
+    
+    switch($q[1])
+    {     
+      case "text":
+        echo "<td class='input'><input type='text' name='q[".$nr."]' size='90' onkeydown='if (event.keyCode == 13) { return false; }'/></td>";
+        break;
+     
+     case "textmore":
+        echo "<td class='textarea'><textarea type='text' name='q[".$nr."]' lines='1' cols='91' rows='3' style='resize: none;'></textarea></td>";
+	break;
+     case "onlynumber":
+	    $anzahl=0;
+		foreach ($answers as $answer){ $anzahl = $answer; break; }
+		if($anzahl<1) $anzahl = 100;
+        echo "<td class='input'><input type='text' name='q[".$nr."]' onkeyup='return checkIfNumber(this, this.value)' maxlength='".$anzahl."' size='90'></td>";
+		break;
+	  
+	  case "onlytext":
+	    $anzahl=0;
+		foreach ($answers as $answer){ $anzahl = $answer; break; }
+		if($anzahl<1) $anzahl = 100;
+        echo "<td class='input'><input type='text' name='q[".$nr."]' onkeyup='return checkIfCharacter(this, this.value)' maxlength='".$anzahl."' size='90'></td>";
+		break;
+		
+	  case "numberandtext":
+	    $anzahl=0;
+		$zahlen=0;
+		$index = 1;
+		$vorne = "";
+		foreach ($answers as $answer)
+		{ 
+		   if($index==1) $zahlen = $answer; 
+		   else if ($index ==2) $anzahl = $answer; 
+		   else if ($index ==3){
+		   $vorne = $answer;
+		   break; }
+		   $index++;
+		}
+		if($anzahl<1) $anzahl = 100;
+		if($zahlen<1) $zahlen= -1;
+        echo "<td class='input'><input type='text' id='q[".$nr."]' name='q[".$nr."]' onkeyup='return checkIfRemix(this, this.value, $anzahl, $zahlen, $vorne)' value='".$qu."' maxlength='".$anzahl."' size='90'></td>";
+		break;
+
+        
+      case "radio":
+        $ai = 1;
+        foreach ($answers as $answer)
+        {
+		  if(strlen($answer)>0){
+        	$elementId = "q-" . $nr . "-" . $ai;
+			echo "<td class='input' onclick='document.getElementById(\"".$elementId."\").checked = true;'><input type='radio' id='".$elementId."' name='q[".$nr."]' value='".$answer."' ";
+          
+			//preselect
+			//if ($qu[$nr] == $answer || $q['dset'] == $ai) echo "checked ";
+          
+			echo "/></input></td>";
+			$ai++;
+		  }
+        }
+        break;
+        
+      case "multi":
+        $i = 0;
+        foreach ($answers as $answer)
+        {
+          if(strlen($answer)>0){
+			  echo "<td class='input'><input type='checkbox' name='q[".$nr."][".$i++."]' value='".$answer."' ";
+			  if (is_array($qu[$nr]) && in_array($answer,$qu[$nr]))
+				echo "checked ";
+			  echo "/></input></td>";
+		  }
+        }
+        break;
+        
+      case "multitext":
+        $in = 1;
+        foreach ($answers as $answer)
+        {
+			  echo "<tr><td class='pad'>";
+			  echo $in . ". <input type='text' name='q[".$nr."][".$i++."]' value='".$qu."' size='90'>";
+			  echo "</td></tr>";
+			  $in++;
+        }
+        
+        break;
+    }
+                    
+    echo "</tr>";
+    if ($style == "light") $style = "dark";
+    else $style = "light";
+    $nr++;
+  }
+  
+  echo "</table></td></tr>";
+}
+?>
+<script type="text/javascript">
+    function checkIfNumber(Object, Value){
+		var reg = new RegExp(/^([^0-9]*)$/);
+		var lastCharacter = Value.substr(Value.length-1, 1);
+		if(reg.test(lastCharacter))
+		   Object.value = Value.substr(0,Value.length-1);
+		else
+		   Object.value = Value;
+    }
+                              
+    function checkIfCharacter(Object, Value){
+		var reg = new RegExp(/^([^a-zßäöüA-ZÄÖÜ]*)$/);
+		var lastCharacter = Value.substr(Value.length-1, 1);
+		if(reg.test(lastCharacter))
+		   Object.value = Value.substr(0,Value.length-1);
+		else
+		   Object.value = Value;
+    }
+	
+	function checkIfRemix(Object, Value, Length, Zahlen, Vorne){
+	    //alert(Length+" "+Zahlen+" "+Vorne)
+	    if(Value.length<=Length){
+			if(Zahlen==-1){
+				var reg = new RegExp(/^([^0-9a-zßäöüA-ZÄÖÜ]*)$/);
+				var lastCharacter = Value.substr(Value.length-1, 1);
+				if(reg.test(lastCharacter)){
+				   Object.value = Value.substr(0,Value.length-1);
+				}else{
+				   Object.value = Value;
+				}
+			}else if(Zahlen>=-1 && new String(Vorne).valueOf() == new String("true").valueOf()){
+			     if(Value.length<=Zahlen){
+					 var reg = new RegExp(/^([^0-9]*)$/);
+					 if(reg.test(Value[Value.length-1])){
+						 Object.value = Value.substr(0,Value.length-1);
+					 }else{
+						 Object.value = Value;
+					 }
+				 }else{
+				     var reg = new RegExp(/^([^a-zßäöüA-ZÄÖÜ]*)$/);
+		             if(reg.test(Value[Value.length-1]))
+		                Object.value = Value.substr(0,Value.length-1);
+	   	             else
+		                Object.value = Value;
+				 }
+			}else if(new String(Vorne).valueOf() == new String("false").valueOf()){
+			    if(Value.length<=(Length-Zahlen)){
+					 var reg = new RegExp(/^([^a-zßäöüA-ZÄÖÜ]*)$/);
+		             if(reg.test(Value[Value.length-1]))
+		                Object.value = Value.substr(0,Value.length-1);
+	   	             else
+		                Object.value = Value;
+				 }else{
+				     var reg = new RegExp(/^([^0-9]*)$/);
+					 if(reg.test(Value[Value.length-1])){
+						 Object.value = Value.substr(0,Value.length-1);
+					 }else{
+						 Object.value = Value;
+					 }
+				 }
+			}
+		}//end first if
+    }
+
+</script>
+<?php
+
+
+function echoQuestion($q,$nr,$qu,$trans=true,$showcond=false)
+{ 
+	//debug($q);
+	$hide = $q['hidden'];
+	$aslist = $q['aslist'];
+	$nolist = $q['nolist'];
+	
+	if ($trans) $q = translateQ($q);
+	
+	$q = applyAlias($q);
+	
+	//debug($q);
+	//debug($q);
+	//debug($q);
+  //debug($qu);
+  $nr += 1; //bei 1 beginnen, nicht bei 0
+  //$nr 
+  $answers = split(";", $q[2]);
+  //debug($answers." public 216");
+  if (!is_array($answers))
+    $answers = array($q[2]);
+    
+  foreach($answers as $key => $value)
+  {
+    $answers[$key] = trim($value);
+  }
+  
+  
+ 	
+  //debug($cs);
+  $nr = $q['pos'];
+  
+ 	if ($showcond) $q[0] = $q[3] . " - " . $q[0];
+  
+  if ($showcond && $q['condition'])
+  {
+  	//$cs = " style='background-color: lightgreen;' ";
+  	//echo "<tr><td $cs>Wenn: ".$q['condition']."</td></tr>";
+  	
+  	$q[0] = "<span style='background-color: lightgreen;'> wenn ".$q['condition']."</span> " . $q[0];
+  }
+  
+  echo "<input type='hidden' name='q[".$nr."]' value=''/>";
+  switch($q[1])
+  {
+    case "text":
+      echo "<tr><td class='head'>";
+      if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+      echo filterQText($q[0])."</td></tr>";
+      echo "<tr><td class='pad'><input type='text' name='q[".$nr."]' value='".$qu."' size='90' onkeydown='if (event.keyCode == 13) { return false; }'></td></tr>";
+      break;
+    
+   case "textmore":
+        echo "<tr><td class='head'>";
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0])."</td></tr>";
+        echo "<td class='textarea'><textarea type='text' name='q[".$nr."]' lines='1' cols='91' rows='3' style='resize: none;'></textarea></td>";
+	break;
+      
+    case "multitext":
+      echo "<tr><td class='head'>" ;
+      if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+      echo filterQText($q[0])."</td></tr>";
+      $in = 1;
+      $i = 0;
+      foreach ($answers as $answer)
+      {
+			echo "<tr><td class='pad'>";
+			echo $in . ". <input type='text' name='q[".$nr."][".$i++."]' value='".$qu."' size='90'>";
+			echo "</td></tr>";
+			$in++;
+      }
+      
+      break;
+      
+    case "onlynumber":
+		$anzahl=0;
+		foreach ($answers as $answer){ $anzahl = $answer; break; }
+		if($anzahl<1) $anzahl = 100;
+		
+		echo "<tr><td class='head'>";
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0])."</td></tr>";
+        echo "<tr><td class='pad'><input type='text' id='q[".$nr."]' name='q[".$nr."]' onkeyup='return checkIfNumber(this, this.value)' value='".$qu."' maxlength='".$anzahl."' size='90'></td></tr>";
+		break;
+		
+	case "onlytext":
+	    $anzahl=0;
+		foreach ($answers as $answer){ $anzahl = $answer; break; }
+		if($anzahl<1) $anzahl = 100;
+		
+		echo "<tr><td class='head'>";
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0])."</td></tr>";
+        echo "<tr><td class='pad'><input type='text' id='q[".$nr."]' name='q[".$nr."]' onkeyup='return checkIfCharacter(this, this.value)' value='".$qu."' maxlength='".$anzahl."' size='90'></td></tr>";
+		break;
+	
+	case "numberandtext":
+	    $anzahl=0;
+		$zahlen=0;
+		$index = 1;
+		$vorne = "";
+		foreach ($answers as $answer)
+		{ 
+		   if($index==1) $zahlen = $answer; 
+		   else if ($index ==2) $anzahl = $answer; 
+		   else if ($index ==3){
+		   $vorne = $answer;
+		   break; }
+		   $index++;
+		}
+		if($anzahl<1) $anzahl = 100;
+		if($zahlen<1) $zahlen= -1;
+		echo "<tr><td class='head'>";
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0])."</td></tr>";
+        echo "<tr><td class='pad'><input type='text' id='q[".$nr."]' name='q[".$nr."]' onkeyup='return checkIfRemix(this, this.value, $anzahl, $zahlen, $vorne)' value='".$qu."' maxlength='".$anzahl."' size='90'></td></tr>";
+		break;
+
+
+
+    case "radio":
+	
+      if ($aslist)
+      {
+      	$style="light";
+        $i = 0;
+        echo "<tr><td>";
+           
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0]) . "<br/>";
+        $break = 0;
+        echo "<table>";
+        foreach ($answers as $answer)
+        {
+			if(strlen($answer)>0){
+				  echo "<tr class='$style'>";
+				  echo "<td class='input'>";
+				  echo "<input type='radio' name='q[".$nr."]' value='".$answer."' ";
+				  echo "/>".$answer."</input>";
+				  echo "</td>";
+				  if ($style == "light") $style = "dark";
+				  else $style = "light";
+				  echo "</tr>";
+			}
+        }
+        echo "</table>";
+        echo "</td></tr>";
+      }
+      else if (count($answers) > RADIO_LIMIT && !$nolist)
+      {
+        $style="light";
+        $i = 0;
+        echo "<tr><td><br/>";
+        $break = 0;
+        echo "<table";
+        if ($hide) echo " style='display: none;'";
+        echo ">";
+        echo "<tr class='$style'>";
+        
+        echo "<td class='input'>";
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0]) . "";
+        
+        echo "</td><td class='input'><select name='q[".$nr."]'>";
+        echo "<option value='' selected>---</option>";
+        $ai = 1;
+        foreach ($answers as $answer)
+        {
+          if(strlen($answer)>0){
+			  echo "<option value'".$answer."' ";
+			  //preselect
+			  //if ($q['dset'] == $ai) echo " selected";
+			  echo ">$answer</option>";
+			  $ai++;
+		  }
+        }
+        echo "</select>";
+        echo "</td>";
+        /*
+        foreach ($answers as $answer)
+        {
+          echo "<td class='input'>";
+          echo "<input type='radio' name='q[".$nr."]' value='".$answer."' ";
+          if (is_array($qu) && in_array($answer,$qu))
+            echo "checked ";
+          echo "/>".$answer."</input>";
+          echo "</td>";
+          if ($break++ == 1)
+          {
+            $break = 0;
+            //echo "<br/>";
+            if ($style == "light") $style = "dark";
+            else $style = "light";
+            echo "</tr><tr class='$style'>";
+          }
+          
+        }
+        */
+        echo "</tr>";
+        echo "</table>";
+        echo "</td></tr>";
+      }
+      else if (count($answers) > RADIO_MULTILINE_LIMIT && !$nolist)
+      {
+        $style="light";
+        $i = 0;
+        echo "<td>";
+           
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        if ($hide && ($_SESSION['numbers'] == 1)) echo "HIDDEN";
+        if (!$hide || ($_SESSION['numbers'] == 1)) echo filterQText($q[0]) . "<br/>";
+        
+        $break = 0;
+        echo "<table ";
+        if ($hide && ($_SESSION['numbers'] != 1)) echo " style='display: none;'";
+        echo ">";
+         
+        echo "<tr class='$style'>";
+        foreach ($answers as $answer)
+        {
+			if(strlen($answer)>0){
+			  echo "<td class='input'>";
+			  echo "<input type='radio' name='q[".$nr."]' value='".$answer."' ";
+			  echo "/>".$answer."</input>";
+			  echo "</td>";
+			  if ($break++ == (RADIO_MULTILINE_ROWS-1))
+			  {
+				$break = 0;
+				//echo "<br/>";
+				if ($style == "light") $style = "dark";
+				else $style = "light";
+				echo "</tr><tr class='$style'>";
+			  }
+            }
+        }
+                
+        echo "</tr>";
+        echo "</table>";
+        echo "</td>";
+      }
+      else
+      {
+        $style="light";
+        $i = 0;
+        echo "<td><table class='answer'";
+         if ($hide) echo " style='display: none;'";
+        echo ">";
+        echo "<tr class='".$style."'><td></td>";
+  
+        foreach ($answers as $answer)
+        {
+		  if(strlen($answer)>0){
+			echo "<td class='head'><small>" . $answer . "</small></td>";
+		  }
+        }
+        
+        echo "</tr>";
+        echo "<tr>";
+        echo "<td class='qleft".$style."'>";
+        if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+        echo filterQText($q[0])."</td>";
+        
+        $ai = 1;
+        foreach ($answers as $answer)
+        {
+          if(strlen($answer)>0){
+			  echo "<td class='input'><input type='radio' name='q[".$nr."]' value='".$answer."' ";
+			  //preselect
+			  //if ($qu == $answer || $q['dset'] == $ai) echo "checked ";
+			  echo "/></input></td>";
+			  $ai++;
+		  }
+        }
+                
+        echo "</tr>";
+        echo "</table></td></tr>";
+      }
+      break;
+      
+    case "multi":
+      $style="light";
+      $i = 0;
+      echo "<td>";
+      //echo "<table class='answer'>";
+      /*echo "<tr class='".$style."'><td></td>";
+
+      foreach ($answers as $answer)
+      {
+        echo "<td><small>" . $answer . "</small></td>";
+      }
+       
+      echo "</tr>";
+      */
+      //echo "<tr>";
+      //echo "<td>" . $q[0]."</td>";
+      if ($_SESSION['numbers'] == 1) echo $q[3] . " - ";
+      echo filterQText($q[0]) . "<br/>";
+      $break = 0;
+      echo "<table>";
+      echo "<tr class='$style'>";
+      foreach ($answers as $answer)
+      {
+        if(strlen($answer)>0){
+			echo "<td class='input'>";
+			echo "<input type='checkbox' name='q[".$nr."][".$i++."]' value='".$answer."' ";
+			if (is_array($qu) && in_array($answer,$qu))
+			  echo "checked ";
+			echo "/>".$answer."</input>";
+			echo "</td>";
+			if ($break++ == 1)
+			{
+			  $break = 0;
+			  //echo "<br/>";
+			  if ($style == "light") $style = "dark";
+			  else $style = "light";
+			  echo "</tr><tr class='$style'>";
+			}
+		} 
+        
+      }
+              
+      echo "</tr>";
+      echo "</table>";
+      echo "</td>";
+      break;
+  }
+}
+
+function parseQuest($reihenfolge, $seperator, $condition="",&$qcount)
+{
+	$data = split($seperator, trim($reihenfolge));
+	//if ($_SESSION['isadmin']) debug($data);
+	$tmp = array();
+	
+	foreach ($data as $val)
+	{
+		$entry = array();
+		$cmd = trim($val);
+		$hidden = false;
+		$aslist = false;
+		$noList = false;
+		
+		if ($cmd != "")
+		{
+			switch($cmd[0])
+			{
+				case "#":
+				  $entry['cmd'] = "header";
+				  $entry['text'] = substr($cmd, 1);
+				  $entry['condition'] = $condition;
+				  $tmp[] = $entry;
+				  break;
+				
+				case "@":
+				  $entry['cmd'] = "pagebreak";
+				  $entry['condition'] = $condition;
+				  $tmp[] = $entry;
+				  break;
+				  
+				case "w":
+				  $cond = array();
+				  $stat = "";
+					for ($i = 4; $i < strlen($cmd); $i++)
+					{
+						if ($cmd[$i] == "(")
+						{
+							if ($stat == "condition") $stat = "commands";
+							else $stat = "condition";
+						}
+						
+						if ($cmd[$i] != "(" && $cmd[$i] != ")")
+						{
+							$cond[$stat] .= $cmd[$i];
+						}
+						
+					}
+									
+					$sub = parseQuest($cond['commands'], ",", $cond['condition'], $qcount);
+										
+					
+					foreach ($sub as $entry)
+					{
+						$tmp[] = $entry;
+					}
+				  break;
+				  
+				case "H": case "L": case "N":
+				  $prefix = $cmd[0];
+				  $cmd = substr($cmd,1);
+				  if ($prefix == "H") $hidden = true;
+				  if ($prefix == "L") $aslist = true;
+				  if ($prefix == "N") $noList = true;
+				default:
+				  $result = query("select frage, display, antworten, fr_id, suche from ".FRAGE." where fr_id = '".$cmd."'");
+	  
+				  if (!$entry = mysql_fetch_row($result)) 
+				    return 0;
+	    
+	        $entry['cmd'] = "question";
+	        $entry['condition'] = $condition;
+	        $entry['pos'] = $qcount;
+	        if ($hidden) 
+	        {
+	        	$entry['hidden'] = true;
+	        }
+	        if ($aslist)
+	        {
+	        	$entry['aslist'] = true;
+	        }
+			if ($noList) 
+			{
+				$entry['nolist'] = true;
+			}
+	        $qcount++;
+	        
+	        if (strpos($cmd, "!")) //default
+	        {
+	          $oal = split("!", $cmd);
+	          $result2 = query("select frage, display, antworten, fr_id, suche from ".FRAGE." where fr_id = '".$oal[0]."'");
+	  
+				    $entry2 = mysql_fetch_row($result2);
+				  
+	          
+	          $entry[0] = $entry2[0];
+	          $entry['dset'] = $oal[1];
+	        }
+	        
+	        if (strpos($cmd, "/")) //alias!
+	        {
+	          $al = split("/", $cmd);
+	          $al = getQAlias($al[0], $al[1]);
+	          if ($al) $entry[0] = $al;
+	        }
+				  $tmp[] = $entry;
+				  break;
+			}
+		}
+	}
+		
+  $data = $tmp;
+  
+  
+  
+	return $data;
+}
+
+function countQ($list)
+{
+	$c = 0;
+	foreach ($list as $q)
+	{
+		
+		if ($q['cmd'] == "question") $c++;
+	}
+	
+	return $c;
+}
+
+function getPos($list, $qp)
+{
+	if ($qp == 0) return 0;
+	//$qp+=1;
+	
+	$c = 0;
+	foreach ($list as $q)
+	{
+		if ($q['pos'] != $qp) $c++;
+		else break;
+	}
+	
+	//pos of last question
+	//get pos after previous pagebreak
+	
+	while ($c > 0 && $list[$c]['cmd'] != 'pagebreak') $c--;
+	if ($list[$c]['cmd'] == 'pagebreak') $c++;
+	
+	//debug("last pb at $c");
+	
+	//go to next pagebreak
+	//if there is none, go to end
+	
+	while ($c < count($list) && $list[$c]['cmd'] != 'pagebreak') $c++;
+	if ($list[$c]['cmd'] == 'pagebreak') $c++;
+	
+	//debug("next pos is $c");
+	//debug($list);
+	
+	return $c;
+}
+
+function getQByQPos($list, $qp)
+{
+	foreach ($list as $q)
+	{
+		if (isset($q['pos']) && $q['pos'] == $qp) return $q;
+	}
+	
+	return array();
+}
+
+function getAid($q, $a)
+{
+  $c = 0;
+  foreach (split(";", $q['2']) as $i)
+  {
+    if ($i == $a) return $c;
+    $c++;
+  }
+  return "err";
+}
+
+function doForm($action, $qu, $qbypage=4)
+{
+  //debug("DOFORM");
+  //debug($action." - ".$qu." - ".$qbypage." !");
+  $user = $_SESSION['user'];
+
+  $result = query("select reihenfolge from ".BOGEN." where f_id = '".$user['fid']."'"); //selektiert fragebogen aus der Datenbank 
+  
+  $reihenfolge = mysql_fetch_row($result); //konvertiert fragebogen in ein Array
+  
+  $count = 1;
+  
+  $all = parseQuest($reihenfolge[0], ";", "", $count); //splittet reihenfolge mit ; => $all[frage1], $all[frage2]
+  
+  //debug($all);
+  
+  //debug("user status = " . $user['status']);
+  if ($action == 'go')
+  {
+    $error = false;
+    
+    foreach ($qu as $key => $answer)
+    {
+      //debug($key); //index 0,1,2,3
+	  if ($answer == "")
+      {
+        if ($error) $errors .= ", ";
+        $errors .= $key;
+        $error = true;
+      }
+    }
+	
+    $error = false;
+    if (!$error)
+    {
+    	if ($_SESSION['dodebug'] == 1)
+    	{
+          //debug($qu);
+          //debug($_SESSION['user']);
+        }
+       
+       
+          
+      $stat = $user['status'];
+      foreach ($qu as $key => $answer)//durchläuft alle Antworten und fügt sie in die Datenbank
+      {
+		$aq = getQByQPos($all,$key);
+		//debug($aq[3]); //fragennummer
+        $fr_id = $aq[3];
+        
+        //if ($_SESSION['dodebug'] == 1) debug($answer);
+        
+		//debug(" * ".$answer);
+        $answer = answerToDefault($fr_id, $answer); //wandelt von anderen Sprachen in Defaultsprache um
+		//debug(" # ".$answer);
+        
+        
+        //if ($_SESSION['dodebug'] == 1) debug($answer);
+        
+        if (is_array($answer))
+          $answer = implode(";", $answer);
+        //debug("[$key]enter: $answer to $fr_id");
+        
+        $result = query("select count(*) from ".RES." where e_z_id = '".$user['uid']."' and e_fr_id = '".$fr_id."'");
+        $row    = mysql_fetch_row($result);
+        
+        if (!$row[0])
+        {
+         
+		  //old
+          //query("insert into ".RES." (e_z_id, e_fr_id, antwort) values ('".$user['uid']."','".$fr_id."','".$answer."')");
+		 /*debug(($aq['dset']));
+		 debug("*");
+		 debug(trim($answer));
+		 debug("*");
+		 debug(trim($answer));
+		 debug("*");*/
+          if (!trim($answer))
+          {
+            if (isset($aq['dset'])) {
+				$aid = $aq['dset'];
+			}else 
+			{
+ 			    /*if(trim($answer)==0){
+					$aid = "0";
+			    }else{*/
+				
+					$aid = "err";  
+					$answer="";
+				/*}*/
+			}
+			//debug($aq['pos'] . ":" . $aid);
+          }
+          else{
+			//debug($aq['pos'] . ":" . $aid." - ".$answer);
+            $aid = getAid($aq, $answer);
+		  }
+          
+          //debug("answer: $aid");
+          
+          if ($aq[1] == "radio" && $aid !== "err")
+          {
+			$query = "insert into ".RES." (e_z_id, e_fr_id, a_id) values ('".$user['uid']."','".$fr_id."','".$aid."')";
+          }
+		  else
+          {
+            $query = "insert into ".RES." (e_z_id, e_fr_id, antwort) values ('".$user['uid']."','".$fr_id."','".$answer."')";
+          }
+
+          query($query);
+        }
+        $stat = $key;
+      }//end foreach
+      
+      query("update ".ZUG." set status='".$stat."' where z_id = '".$user['uid']."'");
+      
+      $user['status'] = $stat;
+    } 
+
+    $_SESSION['user'] = $user;      
+  }
+  
+
+  //if done
+  if (! ($user['status'] < countQ($all) ))
+  {
+    query("update ".ZUG." set used='1' where z_id = '".$user['uid']."'");
+    
+    return "end";
+  }
+  
+  
+  echo "<form action='?form=go' method='post' name='mainform'>";
+ 
+  echo "<table class='statustable' cellspacing=0 cellpadding=0>";
+  
+  echo "<tr>";
+  echo "  <td class='errorbar'>";
+  if ($error)
+    echo $errors;
+  echo "  </td>";
+  
+  echo "  <td class='statusbar'>";
+  
+  $pcnt = round(($user['status'] / countQ($all)) * 100);
+  pcntBar($pcnt);
+  echo " <small>" .$pcnt . "%</small>";
+  
+  echo "  </td>";
+  echo "</tr>";
+  
+  echo "</table>";
+  
+  echo "<table class='formtable' cellspacing=0 cellpadding=0>";
+  
+  $i = 0;
+	$pos = getPos($all,$user['status']);
+	
+	//debug($all);
+	//debug("status set? " . isset($user['status']));
+	//debug("pos = $pos");
+	//debug($all);#
+	//debug($user);
+	 
+	//return;
+	$abort = false;
+  //debug($all[$pos][2]." -- ");
+  while (!$abort && $pos < count($all))
+  {
+    //debug($all[$pos][2]." ");
+  	if (checkCondition($all[$pos]['condition']))
+  	{ 	
+		switch ($all[$pos]['cmd'])
+	  	{
+	  	  case 'header':
+	  			echo "<tr class='informheader'><td><table><td>".applyHAlias($all[$pos]['text'])."</td></table></td></tr>";
+	  			$pos++;
+	  			
+	  			break;
+	  			
+	  	  case 'pagebreak':
+	  	    
+	  	    if ($_SESSION['display'] != "flat")
+	  	    	$abort = true;
+	  	    $pos++;
+	  	    
+	  	    break;
+	  	    
+	  	      	  
+	  	  case 'question':   
+	  	    //debug("q"); 
+		    //debug("q");
+	  	    $multi = false;
+	  	    $m = array();
+	  	    
+	  	    while (  ( (count($a = split(";", $all[$pos][2])) <= 6) || $all[$pos]["nolist"]) &&
+	  	    				(count($a = split(";", $all[$pos][2])) > 1) &&
+	  	    				($all[$pos][2] == $all[$pos+1][2]) &&
+	  	    				($all[$pos+1]['cmd'] == "question")
+	  	    			)
+	  	    {
+	  	    	$multi = true;
+	  	    	
+	  	    	if (checkCondition($all[$pos]['condition'])) $m[] = $all[$pos];
+	  	    	
+	  	    	$pos ++;
+	  	    }
+	  	    
+	  	    if ($multi && checkCondition($all[$pos]['condition'])) { $m[] = $all[$pos]; }
+	  	    
+		      echo "\n";
+
+	  	    if (!$multi)
+	  	    {
+     			echoQuestion($all[$pos],$pos,$qu[$pos + 1]);
+				//debug("multi false");
+     	    }
+     	    else
+     		{
+			    echoMultiQuestion($m,$pos,$qu);
+				//debug("multi true");
+			}
+	        echo "\n";
+          
+      	  $pos++;
+    			
+    	    break;   
+	  	}
+		//$pos++;
+  	}
+  	else 
+  	{
+  		$pos++;
+  	}
+  }
+  
+  echo "<table class='footertable' cellspacing=0 cellpadding=0>";
+  
+  echo "<tr>";
+  echo "  <td class='statusbar' style='text-align: left; width: 50%;'>";
+  
+  echo " <input type='submit' value='"._t("fortfahren")."' class='nextbutton'/>";
+  global $_SESSION;
+  if ($_SESSION['allow-reset']) echo " <a href='#' onClick='javascript:document.mainform.reset();return false'>zurücksetzen</a>";
+  //if ($_SESSION['user']['lang'] == "default")
+ echo "    " ._t("(Wenn Sie alle Fragen auf dieser Seite ausgefüllt haben, klicken Sie bitte auf 'fortfahren', um zu den nächsten Fragen zu gelangen)");
+  //echo "  </td>";
+  //echo "  <td class='statusbar' style='width: 20%;'>";
+
+  echo "  </td>";
+  echo "</tr>";
+  
+  echo "</table>";
+  
+  echo "</form>";
+  
+}
+
+function rlz($str)
+{
+	//return $str;
+	while ($str[0] == "0") 
+	{
+		//debug("set" . $str);
+		$str = substr($str,1);
+	}
+	
+	return $str;
+}
+
+function explodeCode($code)
+{
+  if (strlen($code) != 13)
+    return 0;
+  
+  $b_id = "";
+  $p_id = "";
+  $cd   = "";
+  
+  $b_id = substr($code, 0, 6);
+  $p_id = substr($code, 6, 3);
+  $cd   = substr($code, 9);
+  /*
+  
+  $i=0;
+  while ($i < 3)
+  {
+    if($code[$i] != '0')
+      $b_id .= $code[$i];
+    $i++;
+  }
+  while ($i < 6)
+  {
+    if($code[$i] != '0')
+      $p_id .= $code[$i];
+    $i++;
+  }
+  while ($i < 10)
+  {
+    $cd .= $code[$i++];
+  }
+  */
+  
+  $exploded = array();
+  $exploded['b_id'] = rlz($b_id);
+  $exploded['p_id'] = rlz($p_id);
+  $exploded['code'] = rlz($cd);
+  
+  //debug($exploded);
+  
+  return $exploded;
+}
+
+function codeExist($input)
+{
+   $nsbank = substr($input, 0, 6);
+   $nsuser = intval(substr($input, 6, 3));
+   $nscode = substr($input, 9);
+   
+   $result = query("select code from ".ZUG." where z_b_id = '".$nsbank."' and z_p_id = '".$nsuser."' and code = '".$nscode."'");
+   $row    = mysql_fetch_row($result);
+	
+   if($row==NULL)
+     return false;
+   else
+	 return true;
+}
+
+function loginCode($code,$anonymous=false)
+{
+  if (!$anonymous)
+    return loginUser($code);
+  else
+    return loginAnonymous($code,$anonymous);
+}
+
+function loginAnonymous($bank,$userg)
+{
+  $codes = createCodes($bank, $userg, 1);
+  $code = $codes[0];
+  
+  //echo "<p>Ihr persönlicher Code ist <b>" . $code . "</b>.</p><p> Bitte schreiben Sie sich diesen Code auf.</p><p> Wenn Sie den gesamten Fragebogen nicht auf einmal beantworten, brauchen Sie diesen Code um zu einem späteren Zeitpunkt fortzufahren.</p>";
+  
+  //echo "<form action='?login' method='post'>";
+  //echo "<input type='hidden' name='code' value='".$code."' />";
+  //echo "<input type='submit' value='-> umfrage beginnen' />";
+  //echo "</form>";
+  
+  $code = explodeCode($code);
+
+  return loginUser($code);
+}
+
+function loginUser($codeOrig)
+{
+	$code = $codeOrig;
+	
+	$code['p_id'] = str_replace("O", "0", $code['p_id']);
+	$code['code'] = trim($code['code']);
+	
+	if (isLocked($code['b_id']) || isLockedUid($code['b_id'], $code['p_id'])) return 0;
+	
+  $result = query("select z_id, used, status from ".ZUG." where z_b_id = '".$code['b_id']."' and z_p_id = '".$code['p_id']."' and code = '".$code['code']."'");
+  
+  if (!$result)
+    return 0;
+    
+  $row    = mysql_fetch_row($result);
+  $id     = $row[0];
+  $used   = $row[1];
+  $status = $row[2];
+  
+  if ($used)
+    return 0;
+  
+  //debug($row);
+  
+  //if ($used == 0 )
+  //  query("update zugangsdaten set used = '1' where z_b_id = '".$code['b_id']."' and z_p_id = '".$code['p_id']."' and code = '".$code['code']."'");
+     
+  $result = query("select b.klasse, b.bezeichnung, p.bezeichnung from ".BANK." b, ".PERSONEN." p where b_id = '".$code['b_id']."' and p_id = '".$code['p_id']."'");
+  $row    = mysql_fetch_row($result);
+  
+  //debug($row);
+  
+  $return = array();
+  
+  $return['uid'] = $id;
+  $return['status'] = $status;
+  $return['class'] = $row[0];
+  $return['bank'] = $row[1];
+  $return['userg'] = $row[2];
+  $return['code'] = $code;
+  
+  $result = query("select f_id from ".BOGEN." where f_klasse = '".$row[0]."' and f_p_id = '".$code['p_id']."'");   
+  $row = mysql_fetch_row($result);
+  
+  $return['fid'] = $row[0];
+  
+  $_SESSION['user'] = $return;
+  
+  $r = query("select * from ".META." where m_z_id='$id'");
+  
+  //META INIT
+  if (!mysql_fetch_row($r))
+    query("insert into ".META." (m_z_id, ip, time_start) values('$id', '".$_SERVER['REMOTE_ADDR']."', '".time()."')");
+  else
+    query("update ".META." set ip='".$_SERVER['REMOTE_ADDR']."' where m_z_id='$id'");
+  
+    
+  return $return;
+}
+
+?>

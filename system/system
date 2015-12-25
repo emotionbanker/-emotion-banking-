@@ -1,0 +1,253 @@
+<?php
+
+/**
+
+  system
+  
+**/
+
+function restore($data)
+{
+  $d = array();
+  createDB($d);
+  
+  //debug($_FILES);
+  
+  //$data = file($_FILES['data']['tmp_name']);
+  
+  $handle = fopen($_FILES['data']['tmp_name'], "r");
+  
+  $data = fread($handle, filesize($_FILES['data']['tmp_name']));
+  
+  fclose($handle);
+    
+  
+  $data = unserialize($data);
+  
+  //debug($data);
+  
+  $i = 0;
+  
+  foreach($data as $table => $rows)
+  {
+    foreach ($rows as $row)
+    {
+      if ($table == "frage")
+        query("insert into ".FRAGE." values ('".$row[0]."','".$row[1]."','".$row[2]."','".$row[3]."','".$row[4]."')");
+      if ($table == "zugangsdaten")
+        query("insert into ".ZUG." values ('".$row[0]."','".$row[1]."','".$row[2]."','".$row[3]."','".$row[4]."','".$row[5]."')");
+      if ($table == "bank")
+        query("insert into ".BANK." values ('".$row[0]."','".$row[1]."','".$row[2]."')");
+      if ($table == "personen")
+        query("insert into ".PERSONEN." values ('".$row[0]."','".$row[1]."')");
+      if ($table == "fragebogen")
+        query("insert into ".BOGEN." values ('".$row[0]."','".$row[1]."','".$row[2]."','".$row[3]."')");
+      if ($table == "ergebnisse")
+        query("insert into ".RES." values ('".$row[0]."','".$row[1]."','".$row[2]."','".$row[3]."')");
+      if ($table == "f_f")
+        query("insert into ".FF." values ('".$row[0]."','".$row[1]."')");
+    }
+  }
+  
+  echo "sicherung eingespielt.";
+}
+
+function backup()
+{
+  //echo "backup zur zeit nicht verfügbar";
+  
+  //die();
+   
+  $tables = array(ZUG,BANK,BOGEN,PERSONEN,FRAGE,RES,FF);
+  
+  $date = date("Y-m-d-H-i-s");
+  
+  $dir = BACKUP_DIR . "/" . $date . "/";
+  mkdir($dir);
+  
+  foreach ($tables as $table)
+  {
+    $backupFile = $dir . $table . '.vbackup';
+  
+    $handle = fopen($backupFile, "w+");
+
+    fwrite($handle, "<table id='".$table."'>\n");
+
+    $result = query("select * from ".$table);
+    if ($result)
+    {
+      while ($row = mysql_fetch_row($result)) 
+      {
+        fwrite($handle, "\t<row>" . serialize($row) . "</row>\n");
+      }
+    }
+    
+    fwrite($handle, "</table>\n\n");
+    
+    fclose($handle);
+  }
+  
+  //$file = array();
+  /*
+  $z = array();
+  $b = array();
+  $f = array();
+  $p = array();
+  $fb = array();
+  $e = array();
+  $ff = array();
+  
+  foreach ($tables as $table)
+  {
+    //debug($table);
+    $result = query("select * from ".$table);
+    if ($result)
+    {
+      
+      while ($row = mysql_fetch_row($result)) 
+      {
+        //debug(mysql_error());
+        //debug($row);
+        switch($table)
+        {
+          case "zugangsdaten": $z[] = $row; break;
+          case "bank": $b[] = $row; break;
+          case "fragebogen": $fb[] = $row; break;
+          case "personen": $p[] = $row; break;
+          case "frage": $f[] = $row; break;
+          case "ergebnisse": $e[] = $row; break;
+          case "f_f": $ff[] = $row; break;
+        }
+      }
+    }
+  }
+  
+  $file = array();
+  
+  
+  
+  foreach ($tables as $table)
+  {
+    //debug($table);
+    $result = query("select * from ".$table);
+    if ($result)
+    {
+      
+      while ($row = mysql_fetch_row($result)) 
+      {
+        //debug(mysql_error());
+        //debug($row);
+        $file[$table][] = $row; 
+      }
+    }
+    else
+      $file[$table] = array();
+  }
+  
+  //debug($file);
+  
+  /*
+  $_z  = serialize($z);
+  $_b  = serialize($b);
+  $_f  = serialize($f);
+  $_p  = serialize($p);
+  $_fb = serialize($fb);
+  $_e  = serialize($e);
+  $_ff = serialize($ff);
+  
+  //$data = serialize($file);
+  
+  foreach ($tables as $table)
+  {
+  
+    switch($table)
+    {
+      case "zugangsdaten": $data = $_z; break;
+      case "bank": $data = $_b; break;
+      case "fragebogen": $data = $_fb; break;
+      case "personen": $data = $_p; break;
+      case "frage": $data = $_f; break;
+      case "ergebnisse": $data = $_e; break;
+      case "f_f": $data = $_ff; break;
+    }
+    
+    $backupFile = BACKUP_DIR . date("Y-m-d-H-i-s-" . $table) . '.vbackup';
+  
+    $handle = fopen($backupFile, "w+");
+  
+    fwrite($handle, $data);
+  
+    fclose($handle);
+  }
+  */
+  /*
+  $command = "mysqldump --opt -h ".DB_HOST." -u ".DB_USER." -p ".DB_PASS." ".DB_BASE." | gzip > ".$backupFile;
+
+  //debug(system($command, $retval));
+  //debug($retval);
+  
+  passthru($command);
+  */
+  
+  echo "<h1>backup:</h1> (achtung... neues format, kann über 'backup einspielen' nicht wiederhergestellt werden!";
+  //if (file_exists($backupFile))
+    echo "backup wurde erstellt: <a href='".$dir."/'>" . dateien . "</a>";
+  //else
+  //  echo "fehler beim erstellen des backups!";
+}
+
+function getCount($query)
+{
+  $result = query($query);
+  if ($result)
+  {
+    $row = mysql_fetch_row($result);
+    return $row[0];
+  }
+  else
+    return 0;
+}
+function getSystemStats()
+{
+  $stats = array();
+  
+  $stats['questions']['count']  = getCount("select count(*) from ".FRAGE);
+  $stats['questions']['text']   = getCount("select count(display) from ".FRAGE." where display='text'");
+  $stats['questions']['radio']  = getCount("select count(display) from ".FRAGE." where display='radio'");
+  $stats['questions']['multi']  = getCount("select count(display) from ".FRAGE." where display='multi'");
+  
+  $stats['banks']['count']      = getCount("select count(*) from ".BANK."");
+  $stats['banks']['classes']    = getCount("select distinct count(klasse) from ".BANK."");
+  
+  $stats['userg']['count']      = getCount("select count(*) from ".PERSONEN."");
+  
+  $stats['codes']['count']      = getCount("select count(*) from ".ZUG."");
+  $stats['codes']['used']       = getCount("select count(*) from ".ZUG." where used='1'");
+  
+  return $stats;
+}
+
+function sysClosed()
+{
+  return (file_exists(LOCK_DIR . "lock"));
+}
+
+function openSystem()
+{
+  if (sysClosed())
+    unlink(LOCK_DIR . "lock");
+}
+
+function closeSystem()
+{
+  if (!sysClosed())
+  {
+    $handle = fopen(LOCK_DIR . "lock", 'w');
+  
+    fputs($handle, "closed");
+  
+    fclose($handle);
+  }
+}
+
+?>

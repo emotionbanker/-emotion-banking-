@@ -1,0 +1,48 @@
+<?php
+
+/** 
+  
+  benutzergruppen
+
+**/
+
+function updateUserg($id, $bez)
+{
+  return query("update ".PERSONEN." set bezeichnung='".$bez."' where p_id='".$id."'");
+}
+
+function deleteUserg($id)
+{
+  query("delete from ".PERSONEN." where p_id='".$id."'");
+}
+
+function createUserg($bezeichnung, $id)
+{
+  return query("INSERT INTO ".PERSONEN." (bezeichnung) values ('".$bezeichnung."')");
+}
+
+function getUsergList()
+{
+  $list = array();
+  
+  $result = query("select p_id, bezeichnung from ".PERSONEN);
+  if ($result)
+    while ($row = mysql_fetch_row($result)) 
+      $list[] = $row; 
+  
+  return $list;
+}
+
+function getUsergByID($id)
+{
+  $result = query("select bezeichnung from ".PERSONEN." where p_id = '".$id."'");
+  if ($result)
+  {
+    $row = mysql_fetch_row($result);
+    return $row[0];
+  }
+  else return false;
+}
+
+
+?>

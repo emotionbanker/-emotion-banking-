@@ -1,0 +1,106 @@
+<?php
+
+function isLocked($id)
+{
+	if (!file_exists(STATIC_DIR . "banklocks")) return false;
+	
+	$data = file(STATIC_DIR . "banklocks");
+	
+	foreach ($data as $list)
+	{
+		if (trim(strtolower($id)) == trim(strtolower($list)))
+		  return true;
+	}
+	
+	return false;
+}
+
+function lockUnlock($id)
+{
+	$found = false;
+	
+  $n = array();
+	
+	if (file_exists(STATIC_DIR . "banklocks"))
+	{
+		$data = file(STATIC_DIR . "banklocks");
+		
+
+		
+		
+		
+		foreach ($data as $list)
+		{
+			if (trim($id) != trim($list))
+			  $n[] = $list;
+			else
+			  $found = true;
+		}
+		
+		
+	}
+	
+	  if (!$found)
+		  $n[] = $id;
+	  
+	 $r = fopen(STATIC_DIR . "banklocks", "w");
+	 foreach ($n as $ni)
+	   if (trim($ni) != "") fwrite($r, trim($ni) . "\n");
+	 fclose($r);
+}
+
+function isLockedUid($id, $uid)
+{
+  return isLocked($id . ":" . $uid);
+}
+
+function lockUnlockUid($id, $uid)
+{
+  lockUnlock($id . ":" . $uid);
+}
+
+function showLocks($bank, $do, $uid)
+{
+  if ($do=='lockunlock')
+  {
+    lockUnlock($bank);
+  }
+   if ($do=='lockunlockuid')
+  {
+    lockUnlockUid($bank, $uid);
+  }
+  
+  $bank = getBank($bank);
+  
+  if (isLocked($bank[0])) echo "Bank ist gesperrt";
+  else echo "Bank ist für Eingaben geöffnet";
+  
+  echo "<h1>" . $bank[1];
+   
+   echo " <a href='?lock-bank=".$bank[0]."&do=lockunlock' style='color: ";
+    if (!isLocked($bank[0]))     
+      echo "#D00000;'>sperren";
+    else
+      echo "#00D000;'>öffnen";   
+    echo "</a>";
+    
+  echo "</h1>";
+  
+  echo "<p><b>Benutzergruppen</b></p>";
+  
+  echo "<table border=1>";
+  foreach (getUsergList() as $userg)
+  {
+    echo "<tr><td>".$userg[1]."</td><td>";
+     echo " <a href='?lock-bank=".$bank[0]."&uid=".$userg[0]."&do=lockunlockuid' style='color: ";
+    if (!isLockedUid($bank[0], $userg[0]))     
+      echo "#D00000;'>sperren";
+    else
+      echo "#00D000;'>öffnen";   
+    echo "</a>";
+    echo "</td></tr>";
+  }
+  echo "</table>";
+}
+
+?>

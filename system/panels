@@ -1,0 +1,34 @@
+<?php
+
+//panels
+
+function beginPanel(&$panel)
+{
+  $panel = "<table class='panel' cellspacing='0'>";
+}
+
+function panelHeader(&$panel, $title, $color="")
+{
+  $panel .= "<tr class='header'>";
+  $panel .= "<td colspan='2' ";
+  if ($color != "") $panel .= "style='background-color: ".$color.";'";
+  $panel .= ">".$title."</td>";
+  $panel .= "</tr>";
+}
+
+function panelRow(&$panel, $row)
+{
+  $panel .= "<tr class='row'>";
+  $panel .= "<td class='text'>" . $row . "</td>";
+  $panel .= "</tr>";
+}
+
+function endPanel(&$panel)
+{
+  $panel .= "<tr class='row'>";
+  $panel .= "<td colspan='2' class='final'>&nbsp;</td>";
+  $panel .= "</tr>";
+  $panel .= "</table>";
+}
+
+?>

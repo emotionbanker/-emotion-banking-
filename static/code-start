@@ -1,0 +1,68 @@
+  <!--- HIER KANN EIN BELIEBIEGER TEXT EINGEFÜGT WERDEN -->
+
+<?php
+
+?>
+
+  <!--- HIER BEGINNT DER CODE- EINGABETEIL. NICHT BEARBEITEN -->
+
+
+<h1>Wenn Sie einen persönlichen Code für das Umfragesystem haben, geben Sie diesen bitte hier ein:</h1>
+<form action='?login' method='post'>
+
+  <table>
+  <tr>
+  <td>Code:</td><td><input type='text' name='code' maxlength='13' size='45' />
+  <input type='hidden' name='hid' value="deu" maxlength='13' size='13' /></td>
+   
+  <!-- languages -->
+  
+  <tr>
+  <td>
+  Bevorzugte Sprache: 
+  </td>
+  <td>
+   <select name='lang' disabled='false' style='width: 350px' >
+  
+  <?php
+  
+  /*
+    de ... nur deutsch
+    it ... de + ita
+    its .. de + isu
+  */
+ 
+  
+  if ($k == "de")
+  {
+  	echo "<option value='default' >Deutsch</option>";
+  }
+  else if (langExists($k))
+  {
+	 //this lang only
+	 $id = getLangId($k);
+	 $lang = getLangInfoById($id);
+	 echo "<option value='".$id."'>".$lang['name']."</option>";
+  }
+  else
+  {
+    echo "<option value='default'  >Deutsch</option>";
+    //all
+    foreach (getLangList() as $lang)
+    {	
+      echo "<option value='".$lang[0]."'>".$lang[1]."</option>";
+    }
+  }
+  ?>
+  </select>
+  </td>
+  </tr>
+  
+  </table>
+  
+  <input type='submit' value='Umfrage beginnen' />
+  
+</form>
+
+
+  <!--- HIER ENDET DER CODE- EINGABETEIL. AB HIER ÄNDERUNGEN WIEDER MÖGLICH -->

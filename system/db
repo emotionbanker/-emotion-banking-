@@ -1,0 +1,114 @@
+<?php
+
+/**
+
+  db
+  database functions
+  
+**/
+
+
+function readSQLScript($file)
+{
+  $data = implode("", file($file));
+  
+  $queries = array();
+  $query = "";
+  
+  for ($i = 0; $i < strlen($data); $i++)
+  {
+    if ($data[$i] == ";")
+    {
+      $queries[] = $query;
+      $query = "";
+    }
+    else if ($data[$i] != "\r" && $data[$i] != "\n")
+    {
+      if (!($data[$i] == " " && $data[$i+1] == " "))
+        $query .= $data[$i];
+    }
+  }
+  
+  return $queries;
+  
+}
+
+//initialise db with defaults
+function initDB()
+{
+  $database = array();
+  $database['host'] = DB_HOST;
+  $database['user'] = DB_USER;
+  $database['pass'] = DB_PASS;
+  $database['base'] = DB_BASE;
+  $database['id']   = "";
+  $database['conn'] = false;
+  $database['msg']  = "initialised";
+  
+  return $database;
+}
+
+function connectDB(&$db)
+{
+  if (!$db['conn'])
+  {
+    if ($db['id'] = mysql_connect($db['host'], $db['user'], $db['pass']))
+    {
+      if (mysql_select_db($db['base']))
+      {
+        $db['conn'] = true;
+        return true;
+      }
+      else
+      {
+        $db['msg'] = "connectDB: could not select database (" . $db['id'] . ")";
+        $db['conn'] = false;
+      }
+    }
+    else
+    {
+      $db['msg'] = "connectDB: connection failed (" . $db['id'] . ")";
+      $db['conn'] = false;
+    }
+  }
+  else
+    $db['msg'] = "connectDB: already connected";
+  
+  return false;
+}
+
+function closeDB(&$db)
+{
+  mysql_close();
+  $db = initDB();
+}
+
+//warning: overwrites db!
+function createDB(&$db)
+{
+//  $result = query("show tables");
+  
+//  if ($result)
+//    while ($row = mysql_fetch_row($result)) 
+//      query("drop table if exists ".$row[0]); 
+      
+  $queries = readSQLScript(DB_SCRIPT);
+  
+  foreach ($queries as $query)
+  {
+    $result = mysql_query($query);
+    if (!$result)
+      die('Invalid query: ' . mysql_error());
+  }
+}
+
+
+function query($query,$db="")
+{
+  $result = mysql_query($query);
+  if (!$result)
+    return 0;
+  return $result;
+}
+
+?>

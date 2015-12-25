@@ -1,0 +1,112 @@
+<?php
+
+/* macLog
+ *
+ * debug functions
+ *
+ * created:     10-Sep-2004
+ * last change: 10-Sep-2004
+ *
+ * author: lukas maczejka
+ */
+ 
+ function countVisit()
+ { 
+   $count = file("./counter");
+   $count = $count[0]; 
+   
+   $file = fopen ("./counter", "w");
+   
+   $start = time();
+   while ((time() - $start) < COUNTER_LOCK_TIMEOUT && !($locked = flock($file, LOCK_EX)));
+   if ($locked)
+     fputs($file, $count+1);
+   flock($file, LOCK_UN);
+   
+   fclose($file);
+ }
+ 
+ function countHit()
+ {
+   $count = file("./hits");
+   $count = $count[0]; 
+   
+   $file = fopen ("./hits", "w");
+   
+   $start = time();
+   while ((time() - $start) < COUNTER_LOCK_TIMEOUT && !($locked = flock($file, LOCK_EX)));
+   if ($locked)
+     fputs($file, $count+1);
+   flock($file, LOCK_UN);  
+     
+   fclose($file);
+ }
+ 
+ function getHitCount()
+ {
+   $count = file("./hits");
+   $count = $count[0]; 
+   
+   return $count;
+ }
+ 
+ function getVisitCount()
+ {
+   $count = file("./counter");
+   $count = $count[0]; 
+   
+   return $count;
+ }
+
+ function htmlize ($array)
+ {
+   if (!is_array($array))
+     $array = htmlspecialchars($array);
+   else 
+   {
+    foreach ($array as $k => $a)
+    {
+      $array[$k] = htmlize($a);
+    }
+   }
+   return $array;
+ }
+
+ function debug($data)
+ {
+   echo "<pre class='debug'>";
+   
+   if (is_array($data))
+   {
+     $data = htmlize($data);
+     print_r($data);
+   }
+   else
+     echo "" . htmlize($data) . "";
+   
+   echo "</pre>";
+ }
+ 
+ function getMicrotime()
+ {
+   list($usec, $sec) = explode(" ", microtime());
+   return ((float)$usec + (float)$sec);
+ }
+ 
+ function startLog()
+ {
+   global $time;
+   
+   $time = getMicrotime();
+ }
+ 
+ function timeElapsed()
+ {
+   global $time;
+   
+   $elapsed = getMicrotime() - $time;
+   
+   return "time consumed: " . $elapsed . " ms";
+ }
+
+?>

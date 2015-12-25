@@ -1,0 +1,325 @@
+<?php
+
+
+/**
+ 
+  fragebögen
+  
+**/
+
+
+
+function formEdit2($class, $userg, $q, $reihe, $search="")
+{ 
+ if($_POST['save']){
+      
+      $result = query("select f_id, reihenfolge from ".BOGEN." where f_klasse = '".$class."' and f_p_id = '".$userg."'");   
+      $row = mysql_fetch_row($result);
+      
+      if (!$row)
+      {
+        echo "fragenbögen erfolgreich gespeichert";
+        query("insert into ".BOGEN." (f_klasse, f_p_id,reihenfolge) values ('".$class."', '".$userg."','".$reihe."')");
+       // $result = query("select f_id from ".BOGEN.", ".BANK.", ".PERSONEN." where f_klasse = klasse and f_p_id = p_id");   
+        $result = query("select f_id, reihenfolge from ".BOGEN." where f_klasse = '".$class."' and f_p_id = '".$userg."'");
+        $row = mysql_fetch_row($result);
+        $fid = $row[0];
+        $reihenfolge = $row[1];
+      }else{
+        echo "fragenbögen bearbeitung erfolgreich gespeichert";
+   	 $fid = $row[0];
+     	 query("update ".BOGEN." set reihenfolge='".$reihe."' where f_id = '".$fid."'");
+        $reihenfolge = $reihe;
+      }
+
+   
+  }else{
+      $result = query("select f_id, reihenfolge from ".BOGEN." where f_klasse = '".$class."' and f_p_id = '".$userg."'");   
+      $row = mysql_fetch_row($result);
+      if ($row)
+      {
+     	 $fid = $row[0]; 
+     	 $reihenfolge = $row[1];
+      }
+  }
+  
+        
+  $questions = getQuestionListBySearch($search);
+  $inform    = getFormQuestions($fid);
+
+ echo "<h1>Fragebogen für Bankenklasse ".$class.", <br/>Benutzergruppe ".getUsergByID($userg)."<br/>Suchkürzel: ".$search." </h1>";
+  echo "<p>";
+  echo "<small>" . count($inform) . " Frage(n) in diesem Fragebogen</small><br/>";
+  echo "<small>" . count($questions) . " Frage(n) zur Auswahl</small>";
+  echo "</p>";
+  
+  if (count($questions) < 1) return;
+  
+  $style="light";
+  
+  echo "<script language='javascript'>";
+  echo "var state='none';";
+  echo "function showListtable()";
+  echo "{";
+  echo "if (state == 'block') {state='none';} else {state='block';}";
+  echo "document.getElementById(\"listtable\").style.display=state;";
+  echo "}";
+  echo "</script>";
+  
+  echo "<hr/>";
+ // echo "<button name='showButton' onclick='javascript:showListtable();'>Fragenliste ein/ausblenden</button>";
+  echo "<hr/>";
+  echo "<table id='listtable' width='100%'>";
+  echo "<tr style='text-align: left;'>";
+  //echo "<th>ID</th>";
+  echo "<th>ID</th><th>&nbsp;</th><th>Frage/Text</th><th>Art</th></tr>";
+
+
+  echo "<form action='?form-edit2' method='post' name='editform'>";
+  echo "<input type='hidden' name='class' value='".$class."' />";
+  echo "<input type='hidden' name='userg' value='".$userg."' />";  
+  echo "<input type='hidden' name='search' value='".$search."' />";  
+  echo "<script>document.getElementById(\"listtable\").style.display='none';</script>";
+   echo "<script>document.getElementById(\"listtable\").style.display='none';</script>";
+
+ echo "<script>document.getElementById(\"listtable\").style.display='none';</script>";
+    
+
+
+
+  echo "<table width='100%'>";
+  echo "<tr style='text-align: left;'>";
+  echo "</table>";
+  echo "<hr id='myhr'/>spezielle reihenfolge, überschriften:<br/><textarea name='reihenfolge' id = 'reihenfolge' style='width:90%;' rows='40'>".$reihenfolge."</textarea><br/>";
+  echo "<input type='submit' method='post' name='save' id='save' value='-> änderungen speichern' />";
+  echo "<br/>";
+    echo "<a href='?preview-form&form=$fid' target='_blank'>Vorschau</a>";
+  echo "</form>";
+}
+
+function getFormQuestions($form)
+{
+  $result = query("select ff_fr_id from ".FF." where ff_f_id = '".$form."'");
+    
+  if($result)
+  {
+    while ($row = mysql_fetch_row($result)) 
+      $list[] = $row[0]; 
+           
+    if (is_array($list))
+      return $list;
+  }
+  else
+    return array();
+}
+
+function formEdit($class, $userg, $q, $reihe, $search="")
+{ 
+  
+  $result = query("select f_id, reihenfolge from ".BOGEN." where f_klasse = '".$class."' and f_p_id = '".$userg."'");   
+  
+  $row = mysql_fetch_row($result);
+  
+  
+  if (!$row)
+  {
+    query("insert into ".BOGEN." (f_klasse, f_p_id) values ('".$class."', '".$userg."')");
+    $result = query("select f_id from ".BOGEN.", ".BANK.", ".PERSONEN." where f_klasse = klasse and f_p_id = p_id");   
+    $row = mysql_fetch_row($result);
+  }
+    
+  
+  $fid = $row[0]; 
+  $reihenfolge = $row[1];
+  
+  
+  if ($q)
+  {
+    query("delete from ".FF." where ff_f_id = '".$fid."'");
+    
+    foreach($q as $frid => $on)
+    {
+      if ($on)
+        query("insert into ".FF." (ff_f_id, ff_fr_id) values('".$fid."', '".$frid."')");
+    }
+    
+    query("update ".BOGEN." set reihenfolge='".$reihe."' where f_id = '".$fid."'");
+    $reihenfolge = $reihe;
+  }
+   
+  $questions = getQuestionListBySearch($search);
+  $inform    = getFormQuestions($fid);
+   
+  echo "<h1>Fragebogen für Bankenklasse ".$class.", <br/>Benutzergruppe ".getUsergByID($userg)."<br/>Suchkürzel: ".$search." </h1>";
+  echo "<p>";
+  echo "<small>" . count($inform) . " Frage(n) in diesem Fragebogen</small><br/>";
+  echo "<small>" . count($questions) . " Frage(n) zur Auswahl</small>";
+  echo "</p>";
+  
+  if (count($questions) < 1) return;
+  
+  $style="light";
+  
+  echo "<script language='javascript'>";
+  echo "var state='none';";
+  echo "function showListtable()";
+  echo "{";
+  echo "if (state == 'block') {state='none';} else {state='block';}";
+  echo "document.getElementById(\"listtable\").style.display=state;";
+  echo "}";
+  echo "</script>";
+  
+  echo "<hr/>";
+  echo "<button name='showButton' onclick='javascript:showListtable();'>Fragenliste ein/ausblenden</button>";
+  echo "<hr/>";
+  echo "<table id='listtable' width='100%'>";
+  echo "<tr style='text-align: left;'>";
+  //echo "<th>ID</th>";
+  echo "<th>ID</th><th>&nbsp;</th><th>Frage/Text</th><th>Art</th></tr>";
+  
+  echo "<form action='?form-edit' method='post' name='editform'>";
+  echo "<input type='hidden' name='class' value='".$class."' />";
+  echo "<input type='hidden' name='userg' value='".$userg."' />";  
+  echo "<input type='hidden' name='search' value='".$search."' />";  
+  echo "<input type='hidden' name='reihe' value='".$reihe."' />"; 
+  
+  echo "<script>document.getElementById(\"listtable\").style.display='none';</script>";
+    
+  if (is_array($questions))
+  {
+    foreach ($questions as $quest)
+    {
+      echo "<tr class='".$style."'>";
+      echo "<input type='hidden' name='q[".$quest[3]."]' value='' />";
+      echo "<td width='1%'>" . $quest[3] . "</td>";
+      echo "<td width='1%'>";
+      /*
+      echo "<input type='checkbox' name='q[".$quest[3]."]'";
+      if (is_array($inform) && in_array($quest[3],$inform))
+        echo "checked ";
+      echo "/>";
+      */
+      echo "\n<input type='button' value='add' onClick='javascript:addText(\"".$quest[3].";\", this);'/>";
+      echo "</td>";
+      
+      echo "<td style='width: 88%;'>" . $quest[0] . "<br/><small><i>";
+      $answers = split(";", $quest[2]);
+      foreach ($answers as $answer)
+        echo $answer ."; ";
+      echo "</i></small></td>";
+      
+      //echo "<td width='88%'>" . $quest[0] . "<br/><small><i>". $quest[2] ."</i></small></td>";
+      echo "<td width='10%'>" . $quest[1] . "</td>";
+      echo "</tr>";
+      
+      if ($style == "light") $style = "dark";
+      else $style = "light";
+    }
+  }
+  
+  echo "</table>";
+  echo "<hr id='myhr'/>spezielle reihenfolge, überschriften:<br/><textarea name='reihenfolge' id = 'reihenfolge' style='width:70%;' rows='10'>".$reihenfolge."</textarea><br/>";
+  echo "durch ';' getrennt. spezielle überschriften zwischendurch beginnen mit '#'. Beispiel:<br/>";
+  echo "<pre>#persönliche fragen;1;2;3;4;#allgemeine fragen;7;6;5;8;</pre><br/>";
+  echo "<input type='submit' method='post'  name='save' id='save'  value='-> änderungen speichern' disabled='disabled' />";
+  echo "<br/>";
+
+  echo "<a href='?preview-form&form=$fid' target='_blank'>Vorschau</a>";
+  
+  echo "</form>";
+}
+
+function previewForm($fid)
+{
+	$result = query("select reihenfolge from ".BOGEN." where f_id = '".$fid."'");
+  
+  $reihenfolge = mysql_fetch_row($result);
+  
+  $count = 1;
+  
+  //$reihenfolge[0] = str_replace("\r\n", " ", $reihenfolge[0]);
+  //debug($reihenfolge);
+  $all = parseQuest($reihenfolge[0], ";", "", $count);
+  
+  echo "<b>Sprachauswahl:</b>";
+  
+  $langs = getLangList();
+  echo "&nbsp;&nbsp;<a href='?preview-form&form=$fid&setlang=default'>standard</a>&nbsp;&nbsp;";
+  foreach ($langs as $l)
+  {
+  	echo "<a href='?preview-form&form=$fid&setlang=" . $l[0] . "'>" . $l[1] . "</a>&nbsp;&nbsp;";
+  }
+  
+  global $r;
+  if (isset($r['setlang'])) $_SESSION['user']['lang'] = $r['setlang'];
+  
+  echo "<form name='mainform' id='mainform'>";
+  echo "<table class='formtable' style='border: none;' cellspacing=0 cellpadding=0>";
+  
+  $i = 0;
+	$pos = 0;
+	 
+	//return;
+  while ($pos < count($all))
+  {
+  	
+  	
+  	switch ($all[$pos]['cmd'])
+  	{
+  		case 'header':
+  			echo "<tr class='informheader'><td><table><td>".$all[$pos]['text']."</td></table></td></tr>";
+  			$pos++;
+  			break;
+  			
+  	  case 'pagebreak':
+  	    echo "<tr><td><hr style='border: 1px solid red;' /></td></tr>";
+  	    $pos++;
+  	    break;
+  	    
+  	  case 'question':
+  	    
+  	    //if ($all[$pos]['condition'] != "") debug("<div style='color: red;'>");
+  	    
+  	    $multi = false;
+  	    $m = array();
+  	    
+  	   while (  ( (count($a = split(";", $all[$pos][2])) <= 6) || $all[$pos]["nolist"]) &&
+	  	    				(count($a = split(";", $all[$pos][2])) > 1) &&
+	  	    				($all[$pos][2] == $all[$pos+1][2]) &&
+	  	    				($all[$pos+1]['cmd'] == "question")
+	  	    			)
+  	    {
+  	    	$multi = true;
+  	    	
+  	    	$m[] = $all[$pos];
+  	    	
+  	    	$pos ++;
+  	    }
+  	    
+  	    if ($multi) { $m[] = $all[$pos]; }
+  	    
+  	    if (!$multi)
+  	    {
+  	    	
+   				 echoQuestion($all[$pos],$pos,$qu[$pos + 1], true, true);
+   			}
+   			else
+   			{
+   				//debug($all[$pos]);
+		       echoMultiQuestion($m,$pos,$qu, true, true);
+		       //die();
+		    }
+    
+    		
+        
+    	  $pos++;
+  			
+  	    break;   
+  	}
+  }
+  
+  echo "</table>";
+  echo "</form>";
+}
+
+?>

@@ -1,0 +1,243 @@
+<?php
+
+/*
+ STYLES
+**/
+
+
+function panelIndiv()
+{
+	beginPanel($panel);
+  panelHeader($panel, "individualisierung");
+  panelRow($panel,"<a href='?indiv-styles' />styles</a>");
+  panelRow($panel,"<a href='?indiv-texts' />begrüßungstexte</a>");
+  if (U09A) panelRow($panel,"<a href='?indiv-etexts' />schlusstexte</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function getStyleList()
+{
+	$dir = STYLE_PATH;
+	
+	$list = array();
+	
+  $d = dir($dir);
+  while (false !== ($entry = $d->read())) 
+  {
+      if($entry != '.' && $entry != '..' && is_dir($dir.$entry))
+          $list[] = $entry;
+  }
+  $d->close();
+  
+  return $list;
+}
+
+function styleListHTML($list)
+{
+	$l = "";
+	
+	$style="light";
+  
+  $l .= "<h1>Verfügbare Styles</h1>";
+  
+  $l .= "<table width='30%'>";
+    
+	foreach ($list as $item)
+	{											
+		$l .= "<tr class='".$style."'>";   
+    $l .= "<td>" . $item . "</td>";
+    //<td><a href='styles/$item/$item.png' target='Popup' onclick='javascript:popup('Popup','width=200,height=200')' src='styles/$item/$item.png'>Vorschau</a></td>";
+    $l .= "</tr>";
+    
+    if ($style == "light") $style = "dark";
+		else $style = "light";
+	}
+	
+	$l .= "</table>";
+	
+	return $l;
+}
+
+function showAvailableStyles()
+{
+	$list = getStyleList();
+	
+	echo styleListHTML($list);
+}
+
+function removeEx(&$settings, $u, $b)
+{
+	unset($settings['styles']['override'][$u][$b]);
+}
+
+function styleSettings($save=false, $delU, $delB, $default, $newU, $newB, $newS)
+{
+	$list = getStyleList();
+	
+	$settings = readSettings();
+	
+	if ($save)
+	{
+		if ($delU && $delB)
+		{
+			removeEx($settings, $delU, $delB);
+		}
+		
+		if ($default)
+		{
+			$settings['styles']['default'] = $default;
+		}
+		
+		if ($newU && $newB && $newS)
+		{		
+			$settings['styles']['override'][$newU][$newB] = $newS;
+		}
+		
+		saveSettings($settings);
+	}
+		
+	echo "<h1>Allgemeine Einstellungen</h1>";
+	
+	$style="light";
+	
+	echo "<form action='?indiv-styles&save=true' method='post'/>";
+  
+  echo "<table width='100%'>";
+    
+	echo "<tr class='".$style."'>";
+	echo "<td width='1%'>Default-Style:</td>";
+  echo "<td colspan=1>";
+  echo "<select name='default-style'>";
+  foreach ($list as $i)
+  {
+    echo "<option";
+    if ($i == $settings['styles']['default']) echo " selected";
+    echo ">";
+    echo $i;
+    echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  echo "<td>";
+  echo "<input type='submit' value='speichern' />";
+  echo "</td>";
+  echo "<td/>";
+  echo "</tr>";
+  
+  echo "</form>";
+  echo "<tr>";
+  echo "<tr/><tr/><tr/><tr/><tr/><tr/><tr/><tr/>";
+  echo "</tr>"; 
+  echo "<th align=left colspan=3><h1>Individuelle Einstellungen</h1></th>";
+  // echo "<tr>";
+  // echo "<th align=left colspan=3><small>Neue Ausnahme hinzufügen</small></th>";
+  // echo "</tr>"; 
+  
+  echo "<tr class='$style'>";
+  echo "<td>";
+  $users = getUsergList();
+  
+  echo "<select name='new-user'>";
+  foreach ($users as $user)
+  {
+  	echo "<option value='".$user[0]."'>";
+  	echo $user[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  
+  
+  echo "<td>";
+  $banks = getBankList();
+  
+  echo "<select name='new-bank'>";
+  echo "<option>Default</option>";
+  foreach ($banks as $bank)
+  {
+  	echo "<option value='".$bank[0]."'>";
+  	echo $bank[1];
+  	echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  
+  echo "<td>";
+  echo "<select name='new-style'>";
+  foreach ($list as $i)
+  {
+    echo "<option>";
+    echo $i;
+    echo "</option>";
+  }
+  echo "</select>";
+  echo "</td>";
+  echo "<td>";
+  echo "<input type='submit' value='hinzufügen' />";
+  echo "</td>";
+  echo "</tr>"; 
+  
+	// echo "</table>";
+	
+	
+  echo "</table>";
+  
+  echo "<table width='100%'>";
+  echo "<tr/>";
+    echo "<tr/><tr/><tr/><tr/><tr/><tr/><tr/><tr/>";
+  echo "<th align=left colspan=3><h1>bisherige Ausnahmen</h1></th>";
+  echo "</tr>"; 
+  echo "<form action='?indiv-styles&save=true' method='post'/>";
+  
+  echo "<tr>";
+  echo "<th align=left><small>Benutzer</small></th>";
+  echo "<th align=left><small>Bank</small></th>";
+  echo "<th align=left><small>Bank-Id</small></th>";
+  echo "<th align=left><small>Style</small></th>";
+  echo "<th align=left><small>Funktionen</small></th>";
+  echo "</tr>";
+  
+  if ($settings['styles']['override'])
+  {
+	  foreach ($settings['styles']['override'] as $ugrp => $dat)
+	  {
+	  	foreach ($dat as $bank => $st)
+	  	{
+	  		echo "<tr class='$style'>";
+	  		
+	  		echo "<td>" . getUsergByID($ugrp) . "</td>";
+			echo "<td width='42%'>" . getBankByID($bank) . "</td>";
+	  		echo "<td width='20%'>" . $bank . "</td>";
+	  		echo "<td>" . $st . "</td>";
+	  		echo "<td><a href='?indiv-styles&save=true&delU=$ugrp&delB=$bank'>ausnahme löschen</a></td>";
+	  		
+	  		echo "</tr>";
+	  		
+	  		 if ($style == "light") $style = "dark";
+				else $style = "light";
+	  	}
+	  }
+  }
+  
+   echo "<tr>";
+   echo "</table>";
+}
+
+function getStyle($userg="", $bank="")
+{
+	$bank = strtolower($bank);
+	$settings = settingsStylesToLower(readSettings());
+	
+	
+	
+	if ($settings['styles']['override'][$userg][$bank])
+		return $settings['styles']['override'][$userg][$bank];
+	else if ($settings['styles']['override'][$userg]['default'])
+	  return $settings['styles']['override'][$userg]['default'];
+	else
+	 	return $settings['styles']['default'];
+}
+
+?>

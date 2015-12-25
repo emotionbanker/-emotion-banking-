@@ -1,0 +1,335 @@
+<?php
+
+
+/**
+ 
+  fragen
+  
+**/
+
+function uploadQuestion($data)
+{
+  $data = file($_FILES['data']['tmp_name']);
+  
+  $i = 0;
+  foreach($data as $question)
+  {
+    $question = split("@", $question);
+    if (createQuestion(trim($question[0]), trim($question[1]), trim($question[2]), trim($question[3])))
+      $i++;
+    else
+      $errors[] = $question;
+  }
+  
+  $err = count($data) - $i;
+  echo $i . " Fragen in die Datenbank aufgenommen, " . $err . " fragen doppelt";
+}
+
+function updateQuestion($id, $frage, $display, $antworten, $search)
+{
+  return query("update ".FRAGE." set frage='".$frage."', display='".$display."', antworten='".$antworten."', suche='".$search."' where fr_id='".$id."'");
+}
+
+function deleteQuestion($id)
+{
+  query("delete from ".FRAGE." where fr_id = '".$id."'");
+}
+
+function createQuestion($text, $display, $answers, $search)
+{
+  /*
+  $result = query("select count(*) from ".FRAGE." where frage='".$text."' and display='".$display."' and antworten='".$answers."' and suche='".$search."'");
+  
+  $row = mysql_fetch_row($result);
+    
+  if ($row[0] != 0)
+    return 0;
+  */
+  
+  query("INSERT INTO ".FRAGE." (frage, display, antworten, suche) values ('".$text."', '".$display."', '".$answers."', '".$search."')");
+  
+  return 1;
+}
+
+function getQuestionByID($fr_id)
+{
+  $result = query("select frage, display, antworten, fr_id, suche from ".FRAGE." where fr_id = '".$fr_id."'");
+  
+  if (!$row = mysql_fetch_row($result)) 
+    return 0;
+    
+  $question = array();
+  $question['question'] = $row[0];
+  $question['display'] = $row[1];
+  $question['answers'] = $row[2];
+  $question['search'] = $row[4];
+  
+  return $question;
+}
+
+function resolve_commands($cond)
+{
+	
+	if (trim($cond['commands']) != "")
+  {
+    $reihenfolge = split(",", $cond['commands']);
+  
+    //sort $all
+    $i=0;
+    $headers = array();
+    $breaks = array();
+    
+    foreach ($reihenfolge as $current)
+    {
+      //$i++;
+      $current = trim($current);
+      if ($current[0] == '#')
+      {
+        $headers[$i] = str_replace("\n", "<br/>", substr($current,1));
+        
+        if ($headers[$i] == "")
+          $headers[$i] = 0;
+      }
+      else if ($current[0] == '@')
+      {
+        if ($_SESSION['display'] != "flat")
+          $breaks[$i] = true;
+      }
+      else
+      {
+        $sorted[] = getQuestionByIDListStyle($current);
+        $sorted[$i]['condition'] = $cond['condition'];
+        $i++;
+      }
+      
+    }
+  }
+  
+  $data['sorted'] = $sorted;
+  $data['headers'] = $headers;
+  $data['breaks'] = $breaks;
+  return $data;
+}
+
+function getQuestionByIDListStyle($fr_id)
+{
+	//debug($fr_id);
+	
+	$cond = array();
+	if (strstr(strtolower($fr_id), "wenn"))
+	{
+		$stat = "";
+		for ($i = 4; $i < strlen($fr_id); $i++)
+		{
+			if ($fr_id[$i] == "(")
+			{
+				if ($stat == "condition") $stat = "commands";
+				else $stat = "condition";
+			}
+			
+			if ($fr_id[$i] != "(" && $fr_id[$i] != ")")
+			{
+				$cond[$stat] .= $fr_id[$i];
+			}
+			
+		}
+		
+		//debug($cond);
+		
+		$rows = resolve_commands($cond);	
+		
+		//debug($rows);
+		
+		return $rows;
+	}
+	else
+	{
+	  $result = query("select frage, display, antworten, fr_id, suche from ".FRAGE." where fr_id = '".$fr_id."'");
+	  
+	  if (!$row = mysql_fetch_row($result)) 
+	    return 0;
+  }
+  return $row;
+}
+
+function getQuestionListBySearch($search)
+{
+  if (!$bogen)
+    $q = "select frage, display, antworten, fr_id, suche from ".FRAGE." where suche like '%".$search."%' or frage like '%".$search."%' or display like '%".$search."%' or antworten like '%".$search."%' or fr_id like '%".$search."%'";
+  else
+    $q = "select frage, display, antworten, fr_id, suche from ".FRAGE.", ".FF." where suche like '%".$search."%' and fr_id = ff_fr_id and ff_f_id = '".$bogen."'";
+  
+  $result = query($q);
+  
+  while ($row = mysql_fetch_row($result)) 
+  {
+    $list[$row[3]] = $row; 
+  }
+  
+  return $list;
+}
+
+function getQuestionList($bogen=false)
+{
+  if (!$bogen)
+    $q = "select frage, display, antworten, fr_id, suche from ".FRAGE."";
+  else
+    $q = "select frage, display, antworten, fr_id, suche from ".FRAGE.", ".FF." where fr_id = ff_fr_id and ff_f_id = '".$bogen."'";
+    
+  $result = query($q);
+  
+  while ($row = mysql_fetch_row($result)) 
+  {
+    $list[$row[3]] = $row; 
+  }
+  
+  return $list;
+}
+
+function checkCondition($condition)
+{
+	$okConj = true;
+	
+	$conjs = split("&", $condition);
+	
+	foreach ($conjs as $conj)
+	{
+		$diss = split("\|", $conj);
+		
+		$okDisj = false;
+		foreach($diss as $dis)
+		{
+			if (checkSubCondition($dis)) 
+			{
+				$okDisj = true;
+			}
+		}
+		
+		if (!$okDisj)
+		{
+			$okConj = false;
+		}
+	}
+	
+	return $okConj;
+	
+	/*
+	$dis = split("\|", $condition);
+	
+	foreach ($dis as $condi)
+	{
+		$ands = split("&", $condi);
+		
+		$ok = true;
+		foreach ($ands as $and)
+		{
+			if (!checkSubCondition($and)) $ok = false;
+		}
+		
+		if ($ok) return true;
+		//if (checkSubCondition($condi)) return true;
+	}
+	
+	return false;
+	*/
+}
+
+function checkSubCondition($condition)
+{
+  //debug($condition);
+ 
+	$q['condition'] = $condition;
+	
+	if ($q['condition'] == "") return true;
+	
+	$negate = false;
+	if ($condition[0] == "!")
+	{
+		$q['condition'] = substr($q['condition'],1);
+	  $negate = true;
+	}
+	
+	$dat = split("\.", $q['condition']);
+  //debug($dat);
+
+  //debug($condition);  
+  $user = $_SESSION['user'];
+  
+  //debug($user);
+  
+  $quer = "select a_id, antwort from ".RES." where e_fr_id='".$dat[0]."' and e_z_id='".$user['uid']."'";
+  $result = query($quer);
+  
+  $row = mysql_fetch_row($result);
+  
+  $q = getQuestionById($dat[0]);
+    
+  $aid = $row[0];
+  $answers = $row[1];
+  $alist = array();
+  
+  if (trim($answers) == "")
+  {
+  	$alist[] = $aid;
+  }
+  else
+  {
+  	$questionAnswers = split(";", $q['answers']);
+  	
+  	$userAnswers = split(";", $answers);
+  	
+  	for ($i = 0; $i < count($questionAnswers); $i++)
+  	{
+  		foreach ($userAnswers as $userAnswer)
+  		{
+  			if ($userAnswer == $questionAnswers[$i])
+  			{
+  				$alist[] = $i;
+  			}
+  		}
+  	}
+  }
+  
+  //given answers: alist
+  //condition: dat[1]
+  
+  $ok = false;
+  foreach ($alist as $a)
+  {
+  	//debug($a . " == " . ($dat[1]-1) . " : " . ( isset($a) && ( ($a == ($dat[1]-1)) )));
+  	
+  	if ( ($a == ($dat[1]-1)) )
+  	{
+  		if (isset($a))
+  		{
+  		  $ok = true;
+  	  }
+  	}
+  }
+  
+  if ($negate) return !$ok;
+  else return $ok;
+}
+
+function getAnswerByReplaceString($str)
+{
+  $dat = split("\.", $str);
+  //debug($dat);
+  
+  $user = $_SESSION['user'];
+  
+  //debug($user);
+  
+  $quer = "select antwort from ".RES." where e_fr_id='".$dat[0]."' and e_z_id='".$user['uid']."'";
+  $result = query($quer);
+  
+  $row = mysql_fetch_row($result);
+  
+  $answers = $row[0];
+  
+  $a = split(";", $answers);
+  
+  return $a[$dat[1]-1];
+}
+
+?>

@@ -1,0 +1,139 @@
+/* ADMIN INTERFACE STYLE */
+
+body 
+{
+  background-color: #FFFFFF; //weiss
+  color: #000000; //schwarz
+  margin-left: 0px;
+  margin-top:  0px;
+}
+
+a         { color: #F08827; text-decoration:none }
+a:visited { color: #F08827; text-decoration:none }
+a:active  { color: #F08827; text-decoration:none }
+a:hover   { color: #F08827; text-decoration:underline }
+
+#start a, a:visited, a:active {
+	font-size: 12pt;
+	font-weight: bold;
+	color: #FFFFFF;
+	text-decoration: none;
+	border: 1px solid #333333;
+	background-color: #F08827;
+	padding: 5px;
+}
+
+#start a:hover {
+	font-size: 12pt;
+	font-weight: bold;
+	color: #F08827;
+	text-decoration: none;
+	border: 1px solid #333333;
+	background-color: #FFFFFF;
+	padding: 5px;
+}
+
+td, th, body 
+{
+  font-family: Arial, sans-serif;
+  font-size: 11pt;
+}
+
+h2, h4, h5, h6          { font-weight: bold; }
+h1                      { font-size: 16px; }
+h2, h3                  { font-size: 14px; }
+h3                      { font-size: 13px; }
+
+hr             { height: 1px; color: #F08827; }    //orange
+
+input, select, textarea  {font-size: 10pt; font-family: Tahoma;} 
+
+input.used {background-color: #FF0000;} //rot
+
+input.nextbutton
+{
+}
+
+tr.light td { background-color: #FBD2AA; } //lila
+tr.dark  td { background-color: #B200FF; } //rosa
+
+span.red {color: #A00000;}
+
+table.main
+{
+  width: 100%;
+  background-color: #FEF0E1;
+  border: 1px solid #F08827;
+  border-top: 15px solid #F08827;
+}
+
+table.main tr.head                 { height: 60px; vertical-align:center; text-align: center;}
+table.main tr.head img             {  }
+
+table.main tr.head td              { background-image: url("images/headImage.png"); background-color: #FFFFFF;  background-repeat: no-repeat; background-position: center left;}
+
+table.main tr.head2 td             { background-color: #d0d0d0; padding: 4px; font-size: 8pt; text-align: right; border-bottom: 1px solid #5e788f;}
+
+table.main tr.sponsors             {padding: 0px;}
+
+table.main tr.content td.nav  {  vertical-align: top; width: 150px; padding-top: 20px; }
+
+table.main tr.content td.content
+{
+  
+  padding: 18px;
+  padding-top: 23px;
+  vertical-align: top;
+}
+
+table.panel
+{
+  border: 1px solid black;
+  margin: 3px;
+  margin-bottom: 23px;
+  width: 100%; 
+  
+}
+
+table.panel td { font-size: 8pt;}
+
+table.panel tr.header td     { font-style: italic; background-color: #d0d0d0; border-bottom: 1px solid black; padding: 5px;}
+table.panel tr.row td.text   { padding: 2px; padding-left: 5px;}
+table.panel tr.row td.final  { height:1px; font-size: 1px; padding: 0px; padding-left: 5px;}
+
+
+table.main tr.foot td {color: #FFFFFF; font-size: 7pt; background-color: #F08827; padding: 3px; text-align: right;}
+
+table.formtable    {border-left: 1px solid black; 
+                    border-right: 1px solid black; 
+                    padding: 10px; padding-top: 15px; width: 100%; }
+                    
+table.statustable { border-left: 1px solid black; 
+                    border-right: 1px solid black; 
+                    border-top: 1px solid black; 
+                    margin: 0px; padding: 0px; width: 100%; }
+
+table.footertable { border-left: 1px solid black; 
+                    border-right: 1px solid black; 
+                    border-bottom: 1px solid black; 
+                    margin: 0px; padding: 0px; width: 100%; }
+
+table.formtable td.head {padding-top: 15px;}                    
+table.formtable td.pad  {padding-left: 50px; padding-top: 5px;}
+
+table.statustable td { padding: 5px; }
+table.statustable td.statusbar { vertical-align: center; text-align: right; background-color: #F8BA7E; }
+table.statustable td.errorbar  { vertical-align: center; text-align: left; background-color: #F8BA7E; color: #A00000;}
+
+table.footertable td.statusbar { vertical-align: center; text-align: right; background-color: #F8BA7E; padding: 5px;}
+
+table.answer { border: 1px solid #c0c0c0;}
+table.answer td { border: 1px solid #c0c0c0; padding: 5px;}
+table.answer td.input {text-align: center; width: 90px;}
+table.answer td.head {text-align: center; font-size: 10pt;}
+
+table.answer td.qleftlight { text-align: right; background-color: #FDE9D4; width: 300px;}
+table.answer td.qleftdark  { text-align: right; background-color: #FBD2AA; width: 300px;}
+
+tr.informheader { width: 800px;}
+tr.informheader td {width: 800px; font-size: 10pt; font-weight: bold;}

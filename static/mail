@@ -1,0 +1,21 @@
+<?php
+$empf = $_POST['empfaenger'];
+$anrede = $_POST['anrede'];
+$titel = $_POST['titel'];
+$vorname = $_POST['vorname'];
+$name = $_POST['name'];
+$email = $_POST['email'];
+$strasse = $_POST['strasse'];
+$nr_stiege = $_POST['nr_stiege'];
+$plz = $_POST['plz'];
+$ort = $_POST['ort'];
+
+$nachricht = "Anrede: ".$anrede."\r\nTitel: ".$titel."\r\nName: ".$name."\r\nVorname: ".$vorname."\r\nEmail: ".$email."\r\nStrasse: ".$strasse."  Nr./Stiege: ".$nr_stiege."\r\nPlz: ".$plz."\r\nOrt: ".$ort;
+$empfaenger1 = $_POST['empfaenger'];
+$betreff1 = $_POST['betreff'];
+mail($empfaenger1, $betreff1, $nachricht, "From: victor@bankdesjahres.at","victor@bankdesjahres.at");
+?>
+
+</p>
+<a href='http://www.bankdesjahres.com/'>www.bankdesjahres.com</a>
+<p>

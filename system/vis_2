@@ -1,0 +1,1003 @@
+<?php
+
+/**
+visualisierung
+**/
+
+function echoBankStat($bank)
+{
+  
+   $users = array();
+    echo "<div style='font-size: 14pt; font-weight:bold;' id='".$bank[0]."'>" . $bank[1] . "</div><br/>";
+    $codes = getCodesByBank($bank[0]);
+    $used = 0;
+    
+    foreach($codes as $code)
+    {
+    	//debug($code);
+      $userg = getUsergById($code[1]);
+      
+      if (!isset($users[$userg]['used']))
+        $users[$userg]['used'] = 0;
+        
+      if (!isset($users[$userg]['thres']))
+        $users[$userg]['thres'] = 0;
+      
+      $users[$userg]['total'] += 1;
+      
+      if ($code[4])
+      {
+        $used++;
+        $users[$userg]['used'] += 1;
+      }
+      
+      if (!$code[4] && $code[5] > 49)
+      {
+      	$users[$userg]['thres'] += 1;
+      }
+    }
+       
+    //echo "<i><b>" . count($codes) . "</b> code(s) insgesamt, <b>" . $used . "</b> bereits verwendet</i><br/>";
+    
+    echo "<table style='border: 1px solid black; background-color: #FFFFFF' width='60%' cellspacing=0 cellpadding=0>";
+    echo "<tr><th>Personengruppe</th><th>Anz. Codes</th><th>Komplett</th><th>nur 50 oder mehr</th><th>Gesamt in Auswertung</th></tr>";
+    
+    $tds = "border-top: 1px solid black; text-align: center;";
+    $tdm = "border-top: 1px solid black; text-align: center; background-color: #50F050;";
+    
+    $sumc = 0;
+    $sumt = 0;
+    
+    foreach ($users as $key => $value)
+    {
+    	echo "<tr style='border: 1px solid gray;'>";
+    	echo "<td style='".$tds."'>" . $key . "</td>";
+    	echo "<td style='".$tds."'>" . $value['total'] . "</td>";
+    	echo "<td style='".$tds."'>" . $value['used'] . "</td>";
+    	echo "<td style='".$tds."'>" . $value['thres'] . "</td>";
+    	echo "<td style='".$tds."'>" . ($value['used'] + $value['thres']) . "</td>";
+    	
+    	$sumc += $value['used'];
+    	$sumt += $value['thres'];
+    	echo "</tr>";
+      //echo "<b>" . $value['total'] . "</b> code(s) für <i>" . $key . "</i><br/>";
+      //echo "&nbsp;&nbsp;&nbsp;&nbsp;<b>" . $value['used'] . "</b> komplett ausgefüllt<br/>";
+      //echo "&nbsp;&nbsp;&nbsp;&nbsp;<b>" . $value['thres'] . "</b> haben 50 oder mehr Fragen beantwortet (Gesamtzahl: komplett und 50 oder mehr)<br/>";
+    }
+    
+    echo "<tr>";
+    echo "<td style='".$tdm."'>Summe</td>";
+    echo "<td style='".$tdm."'>" . count($codes) . "</td>";
+    echo "<td style='".$tdm."'>" . $sumc . "</td>";
+    echo "<td style='".$tdm."'>" . $sumt . "</td>";
+    echo "<td style='".$tdm."'>" . ($sumc + $sumt) . "</td>";
+    echo "</tr>";
+    
+    echo "</table>";
+    echo "<hr/>";
+}
+
+function echoBankStats()
+{
+  if(isset($_POST['filterButton'])){
+	echo "<form id ='statlist' action='?stat-bank' method='post'>";
+	echo '<input value="Zurücksetzen" name="zurück" id="zurück" class="taste" type="submit"  method="post"/>';
+	// echo '</form>';
+  }
+  echo "<form name='stat'  method='post'>";
+  echo "<input type='text' name='filterBank' size='25' method='post' placeholder='Bezeichnung'/>";
+  echo "<input value='Filter' name='filterButton' id='filterButton' class='taste' type='submit'  method='post'/>";
+  echo "</form>"; 
+  
+  $banken = getBankList();
+  if(isset($_POST['filterButton'])) 
+	$banken = getBankListFilter($_POST['filterBank']);
+  
+  
+  $users = array();
+  
+  foreach($banken as $bank)
+  {
+    echo "<a href='#" .$bank[0] . "'>".$bank[1]."</a><br/>";
+  }
+  
+  echo "<br/><hr/>";
+  
+  foreach($banken as $bank)
+  {
+    echoBankStat($bank);
+  }
+}
+
+function restoreForm()
+{
+  echo "<form enctype='multipart/form-data' action='?restore=true' method='post'>";
+  echo "Quelldatei: <input type='file' name='data' size='40' /><br/><br/>";
+  echo "<input type='submit' value='-> einspielen'>";
+  echo "</form>";
+  echo "<hr/>";
+  echo "ACHTUNG: Quelldatei muss eine Umfragesystem- Sicherungsdatei sein!";
+}
+
+function echoUploadTranslationForm()
+{
+	$langs = getLangList();
+
+  echo "<form enctype='multipart/form-data' action='?upload-translation=true' method='post'>";
+  echo "Für Sprache: <select name='lang'>";
+  foreach ($langs as $l)
+    echo "<option value='" . $l[0] . "'>".$l[1]."</option>";
+  echo "</select><br/>";
+  echo "Quelldatei: <input type='file' name='data' size='40' /><br/><br/>";
+  echo "<input type='submit' value='-> einspielen'>";
+  echo "</form>";
+  echo "<hr/>";
+  echo "ACHTUNG: Quelldatei muss eine Textdatei im Format <br/>";
+  echo "<pre>Fragennummer@Übersetzter Fragentext@Übersetzte Antwort 1;Übersetzte Antwort 1;Übersetzte Antwort N</pre>";
+  echo "sein. ";
+  echo "Beispiel: (Frage 445: Die Zusammenarbeit mit meinem direkten Vorgesetzen hat sich in den letzten 12 Monaten...";
+  echo "<pre>445@Cooperation with my direct superior has, in the last 12 months@greatly improved;improved;neither;declined;greatly declined</pre>";
+  
+}
+
+function echoUploadQuestionForm()
+{
+  echo "<form enctype='multipart/form-data' action='?upload-question=true' method='post'>";
+  echo "Quelldatei: <input type='file' name='data' size='40' /><br/><br/>";
+  echo "<input type='submit' value='-> einspielen'>";
+  echo "</form>";
+  echo "<hr/>";
+  echo "ACHTUNG: Quelldatei muss eine Textdatei im Format <br/>";
+  echo "<pre>Frage@Typ@Antwort1;Antwort2;AntwortN@Suchkürzel</pre>";
+  echo "sein.";
+}
+
+function echoSystemStats()
+{
+  $stats = getSystemStats();
+  
+  echo "<h1>Systemstatistik</h1>";
+  echo "<h3>Fragen</h3>";
+  
+  echo "" . $stats['questions']['count'] . " Fragen insgesamt, davon <br/>";
+  echo "" . $stats['questions']['text']  . " Textfragen<br/>";
+  echo "" . $stats['questions']['radio'] . " Auswahlfragen<br/>";
+  echo "" . $stats['questions']['multi'] . " Mehrfachauswahlfragen<br/>";
+  
+  echo "<h3>Banken</h3>";
+                              
+  echo "" . $stats['banks']['count']   . " Banken insgesamt, in<br/>";  
+  echo "" . $stats['banks']['classes'] . " verschiedenen Bankenklassen<br/>";  
+  
+  echo "<h3>Benutzergruppen</h3>";                            
+  
+  echo "" . $stats['userg']['count'] . " Benutzergruppen insgesamt<br/>";
+  
+  echo "<h3>Zugangscodes</h3>";                            
+  
+  echo "" . $stats['codes']['count'] . " Verschiedene Zugangscodes, davon<br/>";   
+  echo "" . $stats['codes']['used']  . " bereits verwendet<br/>";   
+
+} 
+  
+function pcntBar($pcnt)
+{ 
+  $pcnt = $pcnt / 10;
+  $pcnt = round($pcnt);
+  $pcnt = $pcnt * 10;
+  
+  echo "<img style='border: 1px solid black;' src='".SYSTEM_DIR."../images/pcnt".$pcnt.".png' />";
+} 
+  
+function areyousure($action,$h1="",$h2="")
+{
+  echo "<h1>".$h1."</h1>";
+  echo "<h2>".$h2."</h2>";
+  echo "<p>sind sie sicher?</p>";
+  echo "<form action='".$action."' method='post'>";
+  echo "<table>";
+  echo "<tr><td><input type='submit' name='submit' value='nein' /></td><td><input type='submit' name='submit' value='ja' /></td></tr>";
+  echo "</table>";
+  echo "</form>";
+}
+
+function echoQuestionList($list,$remove)
+{
+  if(isset($_POST['loeschen_3'])) 
+  {
+		$listen = $_POST['liste3'];
+		foreach($listen as $temp){					
+			query("delete from ".FRAGE." where fr_id = '".$temp."'");
+		}
+              $list	=getQuestionList();	
+  }
+  
+  echo "<h1>Fragen</h1>";
+  echo "<p>";
+  echo "<small>" . count($list) . " Frage(n) in der Datenbank</small>";
+  
+  echo "</p>";
+  echo "<table id='listtable' width='100%'>";
+  if(isset($_POST['filterButton'])){
+	echo "<form id ='questionlist' action='?list-question' method='post'>";
+	echo '<input value="Zurücksetzen" name="zurück" id="zurück" class="taste" type="submit"  method="post"/>';
+	//echo '</form>';
+  }
+  echo "<form name='questionlist2' action='?list-question=search' method='post'>";
+  echo "<input type='text' name='search' size='25' placeholder='Id/Frage/Text/Art/Suchkürzel' />";
+  echo "<input type='submit' name='filterButton'value='Filter' />";
+  echo "</form><br/>";
+  
+  if (count($list) < 1){
+	echo "</table>";
+	return;
+  }  
+  $removelist = array();
+  $style="light";
+									              
+  echo "<form name='removeQuestion' action='' method='post'>";
+  echo "<tr style='text-align: left;'>";
+  echo "<th>ID</th><th>Frage/Text</th><th>Art</th><th>Suchkürzel</th><th>Optionen</th><th>";
+  //echo "<input type='checkbox'  value='' name='allCheck3' onchange='checkAllFunction5()'/></th>";
+  echo "</tr>";
+	
+  if(!isset($_POST['filterButton']))
+  $list = getQuestionList();
+
+  if (is_array($list))
+  {
+    foreach ($list as $quest)
+    {
+      echo "<tr class='".$style."'>";
+      echo "<td width='1%'>" . $quest[3];
+      if ( ($ac = count(getQAliasList($quest[3]))) > 0) echo "<small>(+$ac)</small>";
+      echo "</td>";
+      echo "<td style='width: 58%;'>" . $quest[0] . "<br/><small><i>";
+      $answers = split(";", $quest[2]);
+      foreach ($answers as $answer)
+        echo $answer ."; ";
+      echo "</i></small></td>";
+      echo "<td width='10%'>" . $quest[1] . "</td>";
+      echo "<td width='10%'>" . $quest[4] . "</td>";
+      echo "<td><small>";
+      echo "<a href='?edit-question=".$quest[3]."'>bearbeiten</a>";
+      echo " | ";
+      echo "<a href='?delete-question=".$quest[3]."'>löschen</a>";
+      echo " | ";
+      echo "<a href='?question-alias=".$quest[3]."'>alternativen</a>";
+      echo "</small></td>"; 
+      echo "<td><input type='checkbox' value='$quest[3]' name='liste3[]'  method='post'/></td>";
+      echo "</tr>";
+      
+	  
+      if ($style == "light") $style = "dark";
+      else $style = "light";
+    }
+  }
+  
+  echo "</table>";
+  echo "<div style = 'float:right;'>";
+  echo "<input type='submit' name='loeschen_3' id='loeschen_3' value='Löschen' method='post'/> </div>";
+  echo "</form>";
+}
+
+function echoUsergList($list)
+{
+  echo "<h1>Benutzergruppen</h1>";
+  echo "<p>";
+  echo "<small>" . count($list) . " Benutzergruppe(n) in der Datenbank</small>";
+  echo "</p>";
+  
+  if (count($list) < 1) return;
+  
+  $style="light";
+  
+  echo "<table width='100%'>";
+  echo "<tr style='text-align: left;'><th>ID</th><th>Bezeichnung</th><th>Funktionen</th></tr>";
+  
+  foreach ($list as $userg)
+  {
+    echo "<tr class='".$style."'>";
+    echo "<td>" . $userg[0] . "</td><td>" . $userg[1] . "</td>";
+    echo "<td><small><a href='?edit-userg=".$userg[0]."' >bearbeiten</a> | <a href='?delete-userg=".$userg[0]."' >löschen</a></td></small></tr>";
+    if ($style == "light") $style = "dark";
+    else $style = "light";
+  }
+  echo "</table>";
+
+}
+
+function echoCodesByBank($list,$bank,$new=false)
+{
+  $afterremove = 0;  
+  if(isset($_POST['loeschen'])) 
+  {
+		$liste = $_POST['liste'];
+				    foreach($liste as $temp){
+					   query("delete from " . ZUG . " where z_id='".$temp."'");
+					   query("delete from " . RES . " where e_z_id='".$temp."'");
+					}
+					
+		$afterremove = count(getCodesByBank($bank));
+  }
+  
+  $id = $bank;
+  $bank = getBankByID($bank);
+  $selectcodes = array();
+  echo "<h1>Zugangscodes für Bank: ".$bank."</h1>";
+  echo "<p>";
+
+  if(!$new){
+		if(isset($_POST['loeschen'])) 
+		{
+			echo "<small>" . $afterremove . " Zugangscode(s) für diese Bank in der Datenbank</small>";	
+		}else{
+			echo "<small>" . count($list) . " Zugangscode(s) für diese Bank in der Datenbank</small>";
+		}  
+  } 
+  else{
+		
+		echo "<small>" . count($list) . " Zugangscode(s) für diese Bank wurde(n) neu erzeugt</small>";
+  }
+    
+
+  echo "</p>";
+  
+  if (count($list) < 1) return;
+  
+  $style="light";
+  
+  
+  if (!$new)
+  {
+	$start = 1;
+	$anzahl = count($list);
+	echo "<form name='Form' action='?del-code-markierte' method='post'>";
+    echo "<table width='100%'>";																				
+    echo "<tr style='text-align: left;'><th>Code</th><th>Benutzergruppe</th><th>Status</th><th/><th/>";
+	echo "<input type='hidden' name='codes-bank' value='$id'  />";
+	echo "</th></tr>";
+	
+    foreach ($list as $code)
+    {
+	  $uid = getUidByCode($code['1'], $code['0'], $code['2']);
+
+	  // happens if code has been deleted
+	  if (is_array($uid)) {
+		continue;
+	  }
+	
+	  $selectcodes[] = $code;
+      echo "<tr class='".$style."'>";
+      echo "<td>" . visCode($code[0], $code[1] , $code[2] ) . "</td>";
+      echo "<td>" . $code[3] . "</td>";
+      echo "<td>";
+      if ($code[4] == 0)
+      {
+        if ($code[5] != 0) echo "füllt gerade aus/noch nicht komplett ausgefüllt";
+        else echo "noch nicht verwendet";
+      }
+      else echo "fertig ausgefüllt";
+      
+      echo "</td>";
+      
+      if (!DEBUG08)
+      { 
+        if ($code[4] != 0)
+        {
+          $meta = getMeta(getUidByCode($code['1'], $code['0'], $code['2']));
+          echo "<td>";
+          echo date("d.m.Y, H:i", $meta['time_end']);
+          echo "<small> (Dauer: ";
+          echo date("H:i:s", $meta['time_end'] - $meta['time_start'] - (60*60));
+          echo ")</small>";
+          echo "</td>";
+        }
+        else
+        {
+        	echo "<td>";
+		      echo "&nbsp;";
+		      echo "</td>";
+        }
+      }
+      echo "<td>";
+      echo "<a href='?del-code=" . getUidByCode($code['1'], $code['0'], $code['2']) . "'>x</a>";
+	  echo "<td><input type='checkbox' value='".getUidByCode($code[1],$code[0],$code[2])."' name='liste[]'/></td></td>";
+      echo "</tr>";
+      if ($style == "light") $style = "dark";
+      else $style = "light";
+	  $start += 1;
+    }
+		
+	
+	echo "</table>";
+	echo "<div style = 'float:right;'>";
+	echo "<input type='submit' name='loeschen' id='loeschen'value='Löschen' method='post'/> </div>";
+	echo "</form>";
+  }
+  else
+  {
+    echo "<table width='100%'>";
+    echo "<tr style='text-align: left;'><th>Code</th></tr>";
+    foreach ($list as $code)
+    {
+      echo "<tr class='".$style."'>";
+      echo "<td>" . $code . "</td>";  	  
+      if ($style == "light") $style = "dark";
+      else $style = "light";
+    }
+	 echo "</table>";
+  }
+ 
+  $markierte = array();	
+}
+
+function translate($lang, $qu, $commit, $text="", $answers="", $sdata)
+{
+	//update db
+  
+  if ($commit == "commit")
+  {
+  	setTranslation($lang,$qu,$text,$answers);
+  }
+  else if ($commit == "sys")
+  {
+  	//debug($sdata);
+  	sysTrans($lang,$sdata);
+  }
+  
+	$qlist = getQuestionList();
+	
+	echo "<h1>Übersetzungen für " . getLangById($lang) . "</h1>";
+  echo "<p>";
+  echo "<small>" . count($qlist) . " Frag(en) insgesamt</small>";
+  echo "</p>";
+  
+  echo "<hr/>";
+  echo "<h2>Systemübersetzungen</h2>";
+  
+  
+    echo "<form action='?translate=".$lang."&action=sys' method='post'>";
+	  echo "<table>";  
+	  echo "<tr><td>fortfahren</td><td><input name='fortfahren' lines='1' cols='40' value='"._t("fortfahren",$lang)."'/></td></tr>";
+	  //_t("(Wenn Sie alle Fragen auf dieser Seite ausgefüllt haben, klicken Sie bitte auf 'fortfahren' um zu den nächsten Fragen zu gelangen)")
+	  echo "<tr><td>(Wenn Sie alle Fragen...)</td><td><input name='wenn' lines='1' cols='40' value='"._t("(Wenn Sie alle Fragen auf dieser Seite ausgefüllt haben, klicken Sie bitte auf 'fortfahren' um zu den nächsten Fragen zu gelangen)", $lang)."'/></td></tr>";
+	  echo "<tr><td>&nbsp;</td><td><input type='submit' value='-> speichern' /></td></tr>";
+	  echo "</table>";
+	  echo "</form>";
+	  
+	  
+  echo "<hr/>";
+  echo "<h2>Fragenübersetzungen</h2>";
+  foreach ($qlist as $q)
+  {
+  	echo "<a ";
+  	if (!translationExists($lang,$q[3]))
+  	echo " style='color: #F00000' ";
+  	echo "href='?translate=".$lang."&q=".$q[3]."'>".$q[3]."</a> - ";
+  }
+  
+  echo "<hr/>";
+  
+ 
+  
+  //now translation form
+  
+  if (isset($qu))
+  {
+  	$quest = getQuestionById($qu);
+  	//debug($quest);
+  	echo "<table width='100%'>";
+  	echo "<tr style='text-align: left;'>";
+  	echo "<th>&nbsp;</th><th>folgende frage übersetzen</th><th>&nbsp;</th><th>&nbsp;</th></tr>";
+  
+  	echo "<tr class='light'>";
+    echo "<td width='1%'>" . $qu . "</td>";
+    echo "<td style='width: 88%;'>" . $quest['question'] . "<br/><small><i>";
+    $answers = split(";", $quest['answers']);
+    foreach ($answers as $answer)
+      echo $answer ."; ";
+    echo "</i></small></td>";
+    echo "<td width='10%'>" . $quest['display'] . "</td>";
+    echo "<td width='10%'>" . $quest['search'] . "</td>";
+    echo "</tr>";
+    echo "</table>";
+  	//form
+  	
+  	echo "<br/><br/>";
+  	
+  	$t = "";
+  	$a = "";
+
+  	if (translationExists($lang,$qu))
+  	{
+  		$trans = getTranslation($lang,$qu);
+  		$t = $trans['text'];
+  		$a = $trans['antworten'];
+  	}
+  	
+	  echo "<form action='?translate=".$lang."&q=".$qu."&action=commit' method='post'>";
+	  echo "<table>";  
+	  echo "<tr><td>text:</td><td><textarea name='text' lines='1' cols='40'>". $t ."</textarea></td></tr>";
+  	echo "<tr><td>antwortmöglichkeiten<br/> (durch ';' getrennt):</td><td><input type='text' name='answers' size='37' value='".$a."'/></td></tr>";
+	  echo "<tr><td>&nbsp;</td><td><input type='submit' value='-> speichern' /></td></tr>";
+	  echo "</table>";
+	  echo "</form>";
+  }
+}
+
+function echoLangList($list)
+{
+  echo "<h1>Sprachen</h1>";
+  echo "<p>";
+  echo "<small>" . count($list) . " Sprach(en) in der Datenbank</small>";
+  echo "</p>";
+  
+  if (count($list) < 1) return; 
+  
+  $style="light";
+  
+  echo "<table width='100%'>";
+  echo "<tr style='text-align: left;'><th>ID</th><th>Bezeichnung</th><th>Kürzel</th><th>Funkionen</th></tr>";
+  foreach ($list as $lang)
+  {
+    echo "<tr class='".$style."'>";
+    echo "<td>" . $lang[0] . "</td>";
+    echo "<td>" . $lang[1] . "</td>";
+    echo "<td>" . $lang[2] . "</td>";
+    echo "<td><small>";
+    echo "<a href='?translate=".$lang[0]."'>übersetzen</a> | <a href='?edit-lang=".$lang[0]."'>bearbeiten</a> | <a href='?delete-lang=".$lang[0]."'>löschen</a> | <a href='?copy-lang=".$lang[0]."'>kopieren</a>";
+    echo "</small></td>";
+    
+    echo "<tr>";
+    
+    if ($style == "light") $style = "dark";
+    else $style = "light";
+  }
+  echo "</table>";
+}
+
+function echoBankList($list,$codes=false)
+{
+  $afterremove = 0;  
+  if(isset($_POST['loeschen'])) 
+  {
+		$listen = $_POST['liste2'];
+		foreach($listen as $temp){					
+			  $users = query("select z_id from ".ZUG." where z_b_id='".$temp."'");
+			  $zids = array();  
+			  while ($row = mysql_fetch_row($users)) 
+			  {
+				$zids[] = $row[0];
+				echo  "ID: ".$row[0];
+			  }
+			  foreach ($zids as $zid)
+			  {
+				query("delete from ".ERG." where e_z_id = '".$zid."'");
+				query("delete from ".ZUG." where z_id = '".$zid."'");
+			  }
+			  query("delete from ".BANK." where b_id='".$temp."'");
+		}
+		$afterremove = count(getBankList());		 
+  }
+  
+  if(isset($_POST['filterButton'])) //wenn Button geklickt wird
+  {
+		$liste = $_POST['filterBank'];
+		$list = array(); // als array initialisieren
+		$result = query("select * from ".BANK." where b_id like '%$liste%' or bezeichnung like '%$liste%' or klasse like '%$liste%'"); //holt spalten b_id, bezeichnung und klasse aus der Tabelle Bank	    while ($row = mysql_fetch_row($result)) //Liefert ein numerisch indizertes Array, das der geholten Zeile entspricht und bewegt den internen Datenatzzeiger vorwärts.
+	    while ($row = mysql_fetch_row($result))
+           {
+	    	$list[] = $row; //jede zeile seperat speichern 
+	    }
+		asort($list); // liste sortieren  
+  }
+
+  echo "<h1>Bankenliste</h1>";
+  echo "<p>";
+   if(isset($_POST['loeschen'])) 
+  {
+	echo "<small>" . $afterremove . " Bank(en) in der Datenbank</small>";
+  }else{
+	echo "<small>" . count($list) . " Bank(en) in der Datenbank</small>";
+  }
+  echo "</p>";
+  
+  $style="light";
+  $temp = "";
+   //echo "<table width='100%'>"; 
+   if(isset($_POST['filterButton'])){
+	echo "<form id ='listbank' action='?list-bank' method='post'>";
+	echo '<input value="Zurücksetzen" name="zurück" id="zurück" class="taste" type="submit"  method="post"/>';
+	//echo "</form>"; 
+   }
+   		     
+  if (count($list) < 1){
+	echo "</table>";
+	return; 
+  }  
+  
+  echo "<form name='listbank' action='?list-bank-filter=' method='post'>";
+  echo "<input type='text' name='filterBank' size='30'  placeholder='Id/Bezeichnung/Klasse'/>";
+  echo "<input value='Filter' name='filterButton' id='filterButton' class='taste' type='submit'  method='post'/>";
+  echo "<table width='100%'>"; 
+  echo "<tr style='text-align: left;'><th>ID</th><th>Bezeichnung</th><th>Klasse</th><th>Funkionen</th>";
+  echo "</form>";
+  echo "</tr>";
+  
+  
+  if(!isset($_POST['filterButton']))
+  $list = getBankList();
+  
+ foreach ($list as $bank)
+  {
+    echo "<tr class='".$style."'>";
+    echo "<td>" . $bank[0] . "</td>";
+    echo "<td>" . $bank[1] . "</td>";
+    echo "<td>" . $bank[2] . "</td>";
+    echo "<td><small>";
+    if ($codes)  echo "<a href='?codes-bank=".$bank[0]."'>zugangscodes</a> | ";
+    echo "<a href='?edit-bank=".$bank[0]."'>bearbeiten</a> | <a href='?delete-bank=".$bank[0]."'>löschen</a>";
+
+    echo " | <a href='?lock-bank=".$bank[0]."' style='color: ";
+    if (!isLocked($bank[0]))     
+      echo "#D00000;'>sperren";
+    else
+      echo "#00D000;'>öffnen";   
+    echo "</a>";
+
+    if (!DEBUG08) echo " | <a href='?meta-stats=".$bank[0]."'>statistik</a>";
+    echo "</small></td>";
+
+    // echo "<td><small>";
+	// echo "</small></td>"; 
+								
+	echo "<td><input type='checkbox' value='$bank[0]' name='liste2[]'/></td></td>";
+	// echo "";
+	
+    echo "<tr>";
+    
+    if ($style == "light") $style = "dark";
+    else $style = "light";
+  }
+  echo "<table width='100%'>";
+		echo "<tr class='".$style."'>";
+  echo "</table>";
+  echo "<div style = 'float:right;'>";
+  echo "<input type='submit' name='loeschen' id='loeschen' value='Löschen' method='post'/> </div>";
+  echo "</form>"; 
+ 	
+}
+
+function createCodesForm()
+{
+  echo "<h1>neue zugangscodes erzeugen</h1>";
+  echo "<h2>für welche benutzer wollen sie codes erzeugen?</h2>";
+  $blist = getBankList();
+  $ulist = getUsergList();
+  
+  echo "<form name='createCodesForm' action='?create-codes=true' method='post'>";
+  
+  echo "<table>";
+  
+  echo "<tr><td>bank:</td><td><select name='bank'>";
+  foreach ($blist as $bank)
+    echo "<option value='".$bank[0]."'>" . $bank[1] . " (".$bank[0].")</option>";
+  echo "</select>";
+  echo "</td></tr>";
+  
+  echo "<tr><td>benutzergruppe:</td><td><select name='userg'>";
+  foreach ($ulist as $user)
+    echo "<option value='".$user[0]."'>" . $user[1] . "</option>";
+  echo "</select>";
+  echo "</td></tr>";
+  
+  echo "<tr><td>anzahl der codes:</td><td><input type='text' value='3' name='anz' size='6'/></td></tr>";
+  
+  echo "<tr><td>&nbsp;</td><td><input type='submit' value='-> codes erzeugen' /></td></tr>";
+  echo "</table>";
+
+  echo "</form>";
+}
+
+function createUsergForm($update=false,$id="",$bez="")
+{
+  if (!$update)
+    echo "<h1>neue benutzergruppe erstellen</h1>";
+  else
+    echo "<h1>benutzergruppe bearbeiten</h1>";
+  echo "<h2>bitte den namen der benutzergruppe eintragen</h2>";
+  if (!$update)
+      echo "<form name='createUsergForm' action='?create-userg=true' method='post'>";
+  else
+  {
+    echo "<form name='createUsergForm' action='?update-userg=".$id."' method='post'>";
+  }
+  echo "<table>";
+  echo "<tr><td>bezeichnung: </td><td><input type='text' name='bezeichnung' value='".$bez."' maxlength='60'/></td></tr>";
+  echo "<tr><td>&nbsp;</td><td><input type='submit' name='speichern'  value='-> speichern' /></td></tr>";
+  echo "</table>";
+  echo "</form>";
+}
+
+function createBankForm($update=false,$id="",$bez="",$class="")
+{
+  if (!$update)
+    echo "<h1>neue Bank erstellen</h1>";
+  else
+    echo "<h1>Bank bearbeiten</h1>";
+  echo "<h2>bitte die Daten der Bank eintragen</h2>";
+  if (!$update)
+    echo "<form name='bank' action='?create-bank=true' method='post'>";
+  else
+    echo "<form name='bank' action='?update-bank=".$id."' method='post'>";
+  echo "<table>";
+  echo "<tr><td>Bank id:</td><td> <input type='text' name='id' maxlength='6' size='6' onkeyup='buttonDisabledNewBank()' placeholder='ZZZZZZ' value='".$id."' ";
+  if ($update) echo "disabled ";
+  echo "/> (6-stellig)</td></tr>";
+  echo "<tr><td>Bezeichnung:</td><td> <input type='text' name='bezeichnung' maxlength='60' size='50' placeholder='TestBank Emotion' onkeyup='buttonDisabledNewBank()' value='".$bez."' /> (min. 5 - max. 60 Zeichen)</td></tr>";
+  echo "<tr><td>Klasse:</td><td> <input type='text' name='klasse' maxlength='60' size='50' placeholder='TestBank Emotion' onkeyup='buttonDisabledNewBank()' value='".$class."' /> (min. 5 - max. 60 Zeichen)</td></tr>";
+   if (!$update)
+	echo "<tr><td>&nbsp;</td><td><input type='submit' value='-> speichern' name='speichern' disabled='disabled'/></td></tr>";
+  else
+	echo "<tr><td>&nbsp;</td><td><input type='submit' value='-> speichern' name='speichern'/></td></tr>";
+  echo "</table>";
+  echo "</form>";
+}
+
+function createLangForm($update=false,$id="",$name="",$short="")
+{
+  if (!$update)
+    echo "<h1>neue sprache erstellen</h1>";
+  else
+    echo "<h1>spache bearbeiten</h1>";
+  echo "<h2>bitte die daten der sprache eintragen</h2>";
+  if (!$update)
+    echo "<form name='createLangForm' action='?new-lang=true' method='post'>";
+  else
+    echo "<form name='createLangForm' action='?update-lang=".$id."' method='post'>";
+  echo "<table>";
+  echo "<tr><td>kürzel:</td><td> <input type='text' name='short' maxlength='3' onkeyup='createLangFormBtn()' size='3' value='".$short."' ";
+  echo "/> (3-stellig)</td></tr>";
+  echo "<tr><td>bezeichnung:</td><td> <input type='text' name='name' maxlength='60' onkeyup='createLangFormBtn()' value='".$name."' /> (max. 60 zeichen)</td></tr>";
+  echo "<tr><td>&nbsp;</td><td><input type='submit' name='speichern' disabled='disabled' value='-> speichern' /></td></tr>";
+  echo "</table>";
+  echo "</form>";
+}
+
+function createQuestionForm($update=false,$id="",$text="",$display="",$answers="",$search="")
+{
+  if (!$update)
+    echo "<h1>neue Frage erstellen</h1>";
+  else
+    echo "<h1>Frage bearbeiten</h1>";
+    
+  echo "<h2>bitte die Frage eintragen</h2>";
+  
+  if (!$update)
+    echo "<form name='question' action='?create-question=true' method='post'>";
+  else
+    echo "<form name='question' action='?update-question=".$id."' method='post'>";
+  
+  echo "<table>";
+  
+  echo "<tr><td>text:</td><td><textarea name='text' lines='1' cols='91' rows='5' placeholder='min. 5 Zeichen' onkeyup='buttonDisabledNewQuestion()' style='resize: none;'>". $text ."</textarea></td></tr>";
+  
+  echo "<tr><td>art der frage:</td><td><select name='display' style=width:570px onchange='selectChangeQuestion()'>";
+  echo "<option value='text' ";  if ($display=="text") echo "selected "; echo ">freie antwort (textfeld)</option>";
+  echo "<option value='radio' "; if ($display=="radio") echo "selected "; echo ">auswahl (radio buttons)</option>";
+  echo "<option value='multitext' "; if ($display=="multitext") echo "selected "; echo ">mehrere freie antworten (textfelder)</option>";
+  echo "<option value='multi' "; if ($display=="multi") echo "selected "; echo ">mehrfachauswahl(unlimited) (tickboxes)</option>";
+  //echo "<option value='multi2' "; if ($display=="multi2") echo "selected "; echo ">mehrfachauswahl(2) (tickboxes)</option>";
+  //echo "<option value='multi3' "; if ($display=="multi3") echo "selected "; echo ">mehrfachauswahl(3) (tickboxes)</option>";  
+  echo "</select></td></tr>";
+  if (!$update)
+    echo "<tr><td>antwortmöglichkeiten<br/> (durch ';' getrennt):</td><td><input type='text' name='answers' size='90' disabled='disabled' value='".$answers."'/></td></tr>";
+  else
+    echo "<tr><td>antwortmöglichkeiten<br/> (durch ';' getrennt):</td><td><input type='text' name='answers' size='90' value='".$answers."'/></td></tr>";
+
+  echo "<tr><td>suchkürzel:</td><td><input type='text' name='search' size='90' value='".$search."'/></td></tr>";
+  if (!$update)
+      echo "<tr><td>&nbsp;</td><td><input type='submit' name='speichern' disabled='disabled' value='-> speichern' /></td></tr>";
+  else
+      echo "<tr><td>&nbsp;</td><td><input type='submit' name='speichern' value='-> speichern' /></td></tr>";
+  
+  echo "</table>";
+  
+  echo "</form>";
+}
+
+function chooseFormForm()
+{
+   
+  echo "<h1>fragebögen bearbeiten</h1>";
+  echo "<h2>bitte einen fragebogen auswählen</h2>";
+  
+  if(!isset($_POST['filterButton']))
+	$blist = getBankList();
+  else
+	$blist = getBankListFilter($_POST['filterBank']);
+
+  $classes = array();
+  foreach ($blist as $bank)
+  {
+    if (!in_array($bank[2], $classes))
+      $classes[] = $bank[2];
+  }
+  $ulist = getUsergList();
+  
+  if(isset($_POST['filterButton'])){
+	echo "<form name='chooseFormForm' action='?choose-form' method='post'>";
+	echo '<input value="Zurücksetzen" name="zurück" id="zurück" class="taste" type="submit"  method="post"/>';
+	
+   }
+   
+  echo "<form name='chooseFormForm' action='' method='post'>";
+  echo "<input type='text' name='filterBank' size='30' placeholder='Bank'/>";
+  echo "<input value='Filter' name='filterButton' id='filterButton' class='taste' type='submit'  method='post'/>";
+  echo "</form>";
+  echo "<form action='?form-edit=true' method='post'>";
+  echo "<table>";
+  
+  echo "<tr>";
+  echo "<td>bank:</td>";
+  echo "<td>";
+  echo "<select name='class'>";
+  
+  foreach ($classes as $class)
+    echo "<option value='".$class."'>" . $class ."</option>";
+  
+  echo "</select>";
+  echo "</td>";
+  echo "</tr>";
+  
+  echo "<tr>";
+  echo "<td>benutzergruppe:</td>";
+  echo "<td>";
+  echo "<select name='userg'>";
+  
+  foreach ($ulist as $user)
+    echo "<option value='".$user[0]."'>" . $user[1] . "</option>";
+  
+  echo "</select>";
+  echo "</td>";
+  echo "</tr>";
+  
+  // echo "<tr>";
+  // echo "<td>suchkürzel:</td><td><input type='text' name='search' /></td>";
+  // echo "</tr>";
+  
+  echo "<tr>";
+  // echo "<td>&nbsp;</td>";
+  echo "<td>";
+  echo "<input type='submit' value='-> bearbeiten' />";
+  echo "</td>";
+  echo "</tr>";
+  
+  echo "</table>";
+  
+  echo "</form>";
+ 
+}
+
+function panelLanguages()
+{
+  beginPanel($panel);
+  panelHeader($panel, "sprachen");
+  panelRow($panel,"<a href='?new-lang' />neue sprache</a>");
+  panelRow($panel,"<a href='?list-lang' />liste</a>");
+  panelRow($panel,"<a href='?upload-translation' />aus datei einspielen</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelLogin()
+{
+  beginPanel($panel);
+  panelHeader($panel, "login");
+  panelRow($panel,"<a href='?' />anmelden</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelBanken()
+{ 
+  beginPanel($panel);
+  panelHeader($panel, "banken");
+  panelRow($panel,"<a href='?create-bank' />neue bank</a>");
+  panelRow($panel,"<a href='?list-bank' />liste</a>");
+  panelRow($panel,"<a href='?stat-bank' />bankenstatistik</a>");
+  panelRow($panel,"<a href='?choose-alias' />platzhalter</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelUserg()
+{
+  beginPanel($panel);
+  panelHeader($panel, "benutzergruppen");
+  panelRow($panel,"<a href='?create-userg' />neue gruppe</a>");
+  panelRow($panel,"<a href='?list-userg' />liste</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelFragen()
+{
+  beginPanel($panel);
+  panelHeader($panel, "fragen");
+  // panelRow($panel,"<a href='?create-question' /><font size='3'>neue frage</font></a>");
+  panelRow($panel,"<a href='?create-question' />neue frage</a>");
+  panelRow($panel,"<a href='?upload-question' />aus datei einspielen</a>");
+  panelRow($panel,"<a href='?list-question' />liste</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelFragebogen()
+{
+  beginPanel($panel);
+  panelHeader($panel, "fragebögen");
+  panelRow($panel,"<a href='?choose-form' />bearbeiten</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelCodes()
+{
+  beginPanel($panel);
+  panelHeader($panel, "zugangscodes");
+  panelRow($panel,"<a href='?create-codes' />neue codes erzeugen</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+function panelSystem()
+{
+  beginPanel($panel);
+  panelHeader($panel, "system");
+  panelRow($panel,"<a href='?stats'>statistik</a>");
+  panelRow($panel,"<a href='?backup'>backup</a>");
+  panelRow($panel,"<a href='?restore'>backup einspielen</a>");
+  if (sysClosed())
+    panelRow($panel,"<a href='?opensys' style='color: #00A000'>freigeben</a>");
+  else
+    panelRow($panel,"<a href='?closesys' style='color: #A00000'>sperren</a>");
+  panelRow($panel,"<a href='?reset'>reset</a>");
+  panelRow($panel,"<a href='?drop-results'>ergebnisse löschen</a>");
+  endPanel($panel);
+  return $panel;
+}
+
+?>
+
+
+<script language="Javascript" type="text/javascript">	       
+	  function buttonDisabledNewBank(){
+		if(document.bank.id.value.length>5 && document.bank.bezeichnung.value.length>4 && document.bank.klasse.value.length>4){
+		        document.bank.speichern.disabled = false;
+		}else{
+			 document.bank.speichern.disabled = true;
+		}
+	  }
+	  
+	  function selectChangeQuestion(){
+			if(document.question.display.options[1].selected == true || document.question.display.options[3].selected == true
+			     || document.question.display.options[4].selected == true || document.question.display.options[5].selected == true){   
+				 document.question.answers.disabled = false;
+			 }else{
+			  document.question.answers.disabled = true;
+			 }
+			buttonDisabledNewQuestion();
+	   }
+
+	  function buttonDisabledNewQuestion(){
+
+		if(document.question.text.value.length > 4){
+			document.question.speichern.disabled = false;
+		}else{
+			document.question.speichern.disabled = true;
+		}
+	  }
+
+</script>
